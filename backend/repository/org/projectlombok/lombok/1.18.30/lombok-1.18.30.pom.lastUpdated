@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Thu Mar 12 14:40:17 CST 2026
+@default-alimaven-https\://maven.aliyun.com/repository/public/.lastUpdated=1773297617094
+https\://maven.aliyun.com/repository/public/.error=Could not transfer artifact org.projectlombok\:lombok\:pom\:1.18.30 from/to alimaven (https\://maven.aliyun.com/repository/public)\: D\:\\\u5A31\u4E50\\\u684C\u9762\\Starfire-Mall\\backend\\repository\\org\\projectlombok\\lombok\\1.18.30\\lombok-1.18.30.pom.6115915804866310494.tmp -> D\:\\\u5A31\u4E50\\\u684C\u9762\\Starfire-Mall\\backend\\repository\\org\\projectlombok\\lombok\\1.18.30\\lombok-1.18.30.pom

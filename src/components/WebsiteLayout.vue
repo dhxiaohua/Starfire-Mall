@@ -12,7 +12,7 @@
 
         <!-- 导航文字 -->
         <nav class="navbar-nav">
-          <router-link to="/home" class="nav-item" :class="{ active: currentPage === 'home' }">首页</router-link>
+          <router-link to="/" class="nav-item" :class="{ active: currentPage === 'home' }">首页</router-link>
           
           <!-- 产品下拉菜单 -->
           <div class="nav-dropdown" @mouseenter="showProductMenu = true" @mouseleave="showProductMenu = false">
@@ -160,6 +160,7 @@
               v-model="loginForm.username" 
               placeholder="请输入账号" 
               class="form-input"
+              @input="onUsernameInput"
             />
           </div>
           <div class="form-group">
@@ -202,6 +203,7 @@
               v-model="registerForm.username" 
               placeholder="请输入账号（4-20位）" 
               class="form-input"
+              @input="onRegisterUsernameInput"
             />
           </div>
           <div class="form-group">
@@ -267,7 +269,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { userStore, setUserLogin } from '../stores/userStore'
-import { login as loginApi, register as registerApi, getUserInfo } from '../api'
+import { login as loginApi, register as registerApi, getUserInfo, getCaptcha } from '../api'
 
 export default {
   name: 'WebsiteLayout',
@@ -329,25 +331,34 @@ export default {
 
     onMounted(() => {
       document.addEventListener('click', handleClickOutside)
-      generateCaptcha()
+      fetchCaptcha()
     })
 
     onUnmounted(() => {
       document.removeEventListener('click', handleClickOutside)
     })
     
-    // 生成随机验证码
-    const generateCaptcha = () => {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-      let code = ''
-      for (let i = 0; i < 4; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length))
+    // 获取验证码（从后端获取，绑定到用户名）
+    const fetchCaptcha = async (username) => {
+      const targetUsername = username || loginForm.value.username
+      if (targetUsername && targetUsername.length >= 4) {
+        const result = await getCaptcha(targetUsername)
+        captchaCode.value = result.code || ''
       }
-      captchaCode.value = code
     }
     
-    const fetchCaptcha = () => {
-      generateCaptcha()
+    // 登录表单用户名输入时获取验证码
+    const onUsernameInput = () => {
+      if (loginForm.value.username.length >= 4) {
+        fetchCaptcha(loginForm.value.username)
+      }
+    }
+    
+    // 注册表单用户名输入时获取验证码
+    const onRegisterUsernameInput = () => {
+      if (registerForm.value.username.length >= 4) {
+        fetchCaptcha(registerForm.value.username)
+      }
     }
     
     // 登录处理
@@ -357,27 +368,24 @@ export default {
         alert('请填写完整信息')
         return
       }
-      if (captcha.toUpperCase() !== captchaCode.value) {
-        alert('验证码错误')
-        generateCaptcha()
-        loginForm.value.captcha = ''
-        return
-      }
       
-      const result = await loginApi(username, password, captcha, captchaCode.value)
+      // 调用后端 API 验证验证码
+      const result = await loginApi(username, password, captcha)
       
-      if (result.success) {
-        // 获取完整用户信息
-        const userInfo = await getUserInfo(result.user.username)
-        const userData = userInfo.success ? userInfo.user : result.user
+      if (result.success && result.data) {
+        // 从 data 中获取用户信息（适配新后端格式）
+        const user = result.data.user
+        const userInfo = await getUserInfo(user.username)
+        const userData = userInfo.success ? userInfo.data : user
         
-        // 使用登录API返回的isAdmin状态
-        const isAdmin = result.user.isAdmin || false
+        // 使用登录API返回的isAdmin状态（根据role判断是否为管理员）
+        const isAdmin = user.role === 'admin' || user.isAdmin || false
         
         // 合并用户数据
         const finalUserData = {
           ...userData,
-          isAdmin: isAdmin
+          isAdmin: isAdmin,
+          token: result.data.token
         }
         
         // 使用setUserLogin支持多用户登录
@@ -391,7 +399,7 @@ export default {
         window.location.reload()
       } else {
         alert(result.message || '登录失败')
-        generateCaptcha()
+        fetchCaptcha()
         loginForm.value.captcha = ''
       }
     }
@@ -407,35 +415,47 @@ export default {
         alert('两次密码输入不一致')
         return
       }
-      if (captcha.toUpperCase() !== captchaCode.value) {
-        alert('验证码错误')
-        generateCaptcha()
-        registerForm.value.captcha = ''
-        return
-      }
       
-      const result = await registerApi(username, password, captcha, captchaCode.value)
+      // 调用后端 API 注册
+      const result = await registerApi(username, password, captcha)
       
       if (result.success) {
         alert('注册成功！请登录')
         authMode.value = 'login'
         // 清空注册表单
         registerForm.value = { username: '', nickname: '', password: '', confirmPassword: '', captcha: '' }
-        generateCaptcha()
+        fetchCaptcha()
       } else {
         alert(result.message || '注册失败')
-        generateCaptcha()
+        fetchCaptcha()
         registerForm.value.captcha = ''
       }
     }
     
     // 监听弹窗关闭，清空表单
     watch(showAuthModal, (newVal) => {
-      if (!newVal) {
+      if (newVal) {
+        // 弹窗打开时获取验证码
+        fetchCaptcha(loginForm.value.username)
+      } else {
         // 弹窗关闭时清空表单
         loginForm.value = { username: '', password: '', captcha: '' }
         registerForm.value = { username: '', nickname: '', password: '', confirmPassword: '', captcha: '' }
-        generateCaptcha()
+        captchaCode.value = ''
+      }
+    })
+    
+    // 监听登录/注册模式切换，刷新验证码
+    watch(authMode, (newVal) => {
+      if (showAuthModal.value) {
+        // 切换模式时清空之前的验证码
+        captchaCode.value = ''
+        // 根据当前模式获取验证码
+        if (newVal === 'login' && loginForm.value.username.length >= 4) {
+          fetchCaptcha(loginForm.value.username)
+        } else if (newVal === 'register' && registerForm.value.username.length >= 4) {
+          fetchCaptcha(registerForm.value.username)
+        }
       }
     })
     
@@ -460,6 +480,8 @@ export default {
       loginForm,
       registerForm,
       fetchCaptcha,
+      onUsernameInput,
+      onRegisterUsernameInput,
       handleLogin,
       handleRegister
     }

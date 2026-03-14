@@ -22,13 +22,17 @@ export const initUserStore = () => {
     try {
       const user = JSON.parse(storedUser)
       userStore.value.isLoggedIn = true
-      userStore.value.username = user.username
+      userStore.value.username = user.username || ''
       userStore.value.nickname = user.nickname || ''
       userStore.value.avatar = user.avatar || ''
       userStore.value.isAdmin = user.isAdmin || false
       userStore.value.adminStatus = user.adminStatus || 'none'
       userStore.value.canApply = user.canApply !== undefined ? user.canApply : false
       userStore.value.isAdminMode = user.isAdminMode || false
+      // 保存token
+      if (user.token) {
+        userStore.value.token = user.token
+      }
     } catch (e) {
       console.error('解析用户数据失败:', e)
       sessionStorage.removeItem('currentUser')
@@ -46,7 +50,9 @@ export const setUserLogin = (user) => {
   userStore.value.adminStatus = user.adminStatus || 'none'
   userStore.value.canApply = user.canApply !== undefined ? user.canApply : false
   userStore.value.isAdminMode = user.isAdminMode || false
-  sessionStorage.setItem('currentUser', JSON.stringify(userStore.value))
+  // 保存完整用户数据（包括token）
+  const userData = { ...userStore.value, token: user.token }
+  sessionStorage.setItem('currentUser', JSON.stringify(userData))
 }
 
 // 设置用户登出

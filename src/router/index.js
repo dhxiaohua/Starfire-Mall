@@ -7,8 +7,6 @@ import Settings from '../views/Settings.vue'
 import Page1 from '../views/Page1.vue'
 import Page2 from '../views/Page2.vue'
 import Page3 from '../views/Page3.vue'
-import Page4 from '../views/Page4.vue'
-import Page5 from '../views/Page5.vue'
 import Admin from '../views/Admin.vue'
 import { userStore } from '../stores/userStore'
 
@@ -16,12 +14,6 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: Home,
-    meta: { title: '首页' }
-  },
-  {
-    path: '/home',
-    name: 'HomePage',
     component: Home,
     meta: { title: '首页' }
   },
@@ -52,27 +44,20 @@ const routes = [
   {
     path: '/page1',
     name: 'Page1',
-    component: Page1
+    component: Page1,
+    meta: { title: '产品列表' }
   },
   {
     path: '/page2',
     name: 'Page2',
-    component: Page2
+    component: Page2,
+    meta: { title: '关于我们' }
   },
   {
     path: '/page3',
     name: 'Page3',
-    component: Page3
-  },
-  {
-    path: '/page4',
-    name: 'Page4',
-    component: Page4
-  },
-  {
-    path: '/page5',
-    name: 'Page5',
-    component: Page5
+    component: Page3,
+    meta: { title: '联系我们' }
   },
   {
     path: '/admin',

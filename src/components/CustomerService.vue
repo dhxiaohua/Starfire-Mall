@@ -22,25 +22,26 @@
             class="message-item"
             :class="{ 'is-mine': msg.isMine }"
           >
-            <!-- 客服消息：头像在左，内容在右 -->
-            <template v-if="!msg.isMine">
-              <div class="message-avatar customer">
-                <span>服</span>
-              </div>
-              <div class="message-content">
-                <div class="message-text">{{ msg.content }}</div>
-                <div class="message-time">{{ msg.time }}</div>
-              </div>
-            </template>
-            <!-- 用户消息：内容在左，头像在右 -->
-            <template v-else>
+            <!-- 当前用户发送的消息：头像在右，气泡在头像左边 -->
+            <template v-if="msg.isMine">
               <div class="message-content">
                 <div class="message-text">{{ msg.content }}</div>
                 <div class="message-time">{{ msg.time }}</div>
               </div>
               <div class="message-avatar user">
-                <img v-if="userStore.avatar" :src="userStore.avatar" alt="头像" />
+                <img v-if="msg.avatar" :src="msg.avatar" alt="头像" />
                 <span v-else>{{ userStore.username?.charAt(0).toUpperCase() }}</span>
+              </div>
+            </template>
+            <!-- 客服回复的消息：头像在左，气泡在头像右边 -->
+            <template v-else>
+              <div class="message-avatar customer">
+                <img v-if="msg.avatar" :src="msg.avatar" alt="客服头像" />
+                <span v-else>服</span>
+              </div>
+              <div class="message-content">
+                <div class="message-text">{{ msg.content }}</div>
+                <div class="message-time">{{ msg.time }}</div>
               </div>
             </template>
           </div>
@@ -70,7 +71,7 @@
 <script>
 import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { userStore } from '../stores/userStore'
-import { getCustomerMessages, sendCustomerMessage } from '../api'
+import { getCustomerMessages, sendCustomerMessage, sendCustomerReply } from '../api'
 
 export default {
   name: 'CustomerService',
@@ -87,7 +88,44 @@ export default {
       
       const result = await getCustomerMessages(userStore.value.username)
       if (result.success) {
-        messages.value = result.messages || []
+        const messageData = result.data || result
+        const rawMessages = messageData.messages || messageData.records || []
+        console.log('原始消息数据:', rawMessages)
+        
+        // 获取当前用户信息以获取头像
+        let currentUserAvatar = userStore.value.avatar || ''
+        try {
+          const userResponse = await fetch(`${window.API_BASE_URL || 'http://localhost:8080/api'}/user/info?username=${encodeURIComponent(userStore.value.username)}`)
+          const userResult = await userResponse.json()
+          if (userResult.success) {
+            currentUserAvatar = userResult.data?.avatar || userResult.user?.avatar || ''
+          }
+        } catch (e) {
+          console.error('获取用户头像失败:', e)
+        }
+        
+        // 获取管理员头像
+        let adminAvatar = ''
+        try {
+          // 尝试获取admin用户信息
+          const adminResponse = await fetch(`${window.API_BASE_URL || 'http://localhost:8080/api'}/user/info?username=admin`)
+          const adminResult = await adminResponse.json()
+          if (adminResult.success) {
+            adminAvatar = adminResult.data?.avatar || adminResult.user?.avatar || ''
+          }
+        } catch (e) {
+          console.error('获取管理员头像失败:', e)
+        }
+        
+        // 将 isFromAdmin 转换为 isMine，并设置头像
+        messages.value = rawMessages.map(msg => ({
+          ...msg,
+          isMine: !msg.isFromAdmin,  // isFromAdmin为false/null时是自己发的消息
+          avatar: msg.isFromAdmin ? adminAvatar : currentUserAvatar  // 使用获取到的头像
+        }))
+        // 滚动到底部
+        await nextTick()
+        scrollToBottom()
       }
     }
 
@@ -96,15 +134,17 @@ export default {
       if (!inputMessage.value.trim() || !userStore.value.isLoggedIn) return
 
       const content = inputMessage.value.trim()
+      
+      // 先添加到本地显示
       const now = new Date()
       const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-
-      // 先添加到本地显示
+      
       messages.value.push({
         id: Date.now(),
         content: content,
         time: time,
-        isMine: true
+        isMine: true,
+        avatar: userStore.value.avatar  // 使用当前用户头像
       })
 
       inputMessage.value = ''
@@ -118,18 +158,6 @@ export default {
         username: userStore.value.username,
         content: content
       })
-
-      // 模拟客服回复
-      setTimeout(() => {
-        const replyTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-        messages.value.push({
-          id: Date.now() + 1,
-          content: '感谢您的消息！我们的客服人员会尽快回复您。请保持在线，也可以拨打客服热线：400-123-4567',
-          time: replyTime,
-          isMine: false
-        })
-        nextTick(() => scrollToBottom())
-      }, 1000)
     }
 
     // 滚动到底部
@@ -317,6 +345,8 @@ export default {
   font-weight: 600;
   flex-shrink: 0;
   overflow: hidden;
+  border: 2px solid #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .message-avatar.customer {

@@ -12,6 +12,7 @@
             placeholder="请输入账号（4-16位字母数字）" 
             class="form-input"
             @blur="checkUsernameHandler"
+            @input="onUsernameInput"
           />
           <span class="error-tip" v-if="usernameError">{{ usernameError }}</span>
           <span class="success-tip" v-if="usernameValid && registerForm.username">✓ 账号可用</span>
@@ -47,8 +48,9 @@
         <div class="form-group captcha-group">
           <div class="captcha-display">
             <span class="captcha-label">验证码：</span>
-            <span class="captcha-code">{{ captchaCode }}</span>
-            <span class="refresh-btn" @click="fetchCaptcha">刷新</span>
+            <span class="captcha-code" v-if="captchaCode">{{ captchaCode }}</span>
+            <span class="captcha-placeholder" v-else>输入账号后获取</span>
+            <span class="refresh-btn" @click="fetchCaptcha" v-if="registerForm.username">刷新</span>
           </div>
           <input 
             type="text" 
@@ -97,11 +99,27 @@ export default {
     const captchaCode = ref('')
 
     const fetchCaptcha = async () => {
-      try {
-        const result = await getCaptchaApi()
-        captchaCode.value = result.code || Math.random().toString(36).slice(-4).toUpperCase()
-      } catch (e) {
-        captchaCode.value = Math.random().toString(36).slice(-4).toUpperCase()
+      // 只有在输入用户名后才绑定验证码
+      if (registerForm.value.username && registerForm.value.username.length >= 4) {
+        const result = await getCaptchaApi(registerForm.value.username)
+        if (result.code) {
+          captchaCode.value = result.code
+        }
+      }
+    }
+
+    // 用户名失焦时重新获取验证码（绑定到用户名）
+    const onUsernameBlur = () => {
+      if (registerForm.value.username && registerForm.value.username.length >= 4) {
+        fetchCaptcha()
+      }
+    }
+
+    // 用户名输入时也获取验证码
+    const onUsernameInput = () => {
+      // 当用户名长度达到4位时自动获取验证码
+      if (registerForm.value.username.length >= 4 && !captchaCode.value) {
+        fetchCaptcha()
       }
     }
 
@@ -160,14 +178,13 @@ export default {
         passwordError.value = ''
       }
       
-      if (captcha.toUpperCase() !== captchaCode.value) {
-        alert('验证码错误')
-        fetchCaptcha()
-        registerForm.value.captcha = ''
+      if (!captcha) {
+        alert('请输入验证码')
         return
       }
 
-      const result = await registerApi(username, password, captcha, captchaCode.value)
+      // 服务端验证验证码
+      const result = await registerApi(username, password, captcha)
       
       if (result.success) {
         alert('注册成功！请登录')
@@ -193,7 +210,9 @@ export default {
       showConfirmPassword,
       checkUsername: checkUsernameHandler,
       handleRegister,
-      fetchCaptcha
+      fetchCaptcha,
+      onUsernameBlur,
+      onUsernameInput
     }
   }
 }
@@ -305,6 +324,12 @@ export default {
   font-size: 18px;
   font-weight: bold;
   letter-spacing: 4px;
+}
+
+.captcha-placeholder {
+  color: #999;
+  font-size: 14px;
+  padding: 8px 10px;
 }
 
 .refresh-btn {

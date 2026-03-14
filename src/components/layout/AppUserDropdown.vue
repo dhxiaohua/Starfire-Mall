@@ -79,10 +79,35 @@ export default {
 
     const toggleDropdown = () => {
       showDropdown.value = !showDropdown.value
+      // 每次打开下拉菜单时，刷新管理员状态
+      if (showDropdown.value) {
+        loadAdminStatus()
+      }
     }
 
     // 加载用户管理员状态
     const loadAdminStatus = async () => {
+      // 首先检查sessionStorage中是否有用户数据
+      const storedUser = sessionStorage.getItem('currentUser')
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser)
+          // 如果sessionStorage中已经有isAdmin信息，先使用它
+          if (user.isAdmin !== undefined) {
+            userStore.value.isAdmin = user.isAdmin
+          }
+          if (user.adminStatus !== undefined) {
+            userStore.value.adminStatus = user.adminStatus
+          }
+          if (user.canApply !== undefined) {
+            userStore.value.canApply = user.canApply
+          }
+        } catch (e) {
+          console.error('解析用户数据失败:', e)
+        }
+      }
+      
+      // 然后从服务器刷新最新的管理员状态
       if (userStore.value.isLoggedIn && userStore.value.username) {
         const result = await getUserAdminStatus(userStore.value.username)
         if (result.success) {
@@ -102,10 +127,21 @@ export default {
     }
 
     // 切换到用户端
-    const switchToUser = () => {
+    const switchToUser = async () => {
       showDropdown.value = false
-      toggleAdminMode()
-      router.push('/home')
+      // 重新从sessionStorage获取最新的用户数据，确保状态正确
+      const storedUser = sessionStorage.getItem('currentUser')
+      if (storedUser) {
+        const user = JSON.parse(storedUser)
+        // 确保isAdmin保持为true，isAdminMode设为false
+        userStore.value.isAdmin = user.isAdmin
+        userStore.value.isAdminMode = false
+        userStore.value.adminStatus = user.adminStatus || 'none'
+        // 更新sessionStorage
+        user.isAdminMode = false
+        sessionStorage.setItem('currentUser', JSON.stringify(user))
+      }
+      router.push('/')
     }
 
     // 申请成为管理员
@@ -134,6 +170,7 @@ export default {
 
     onMounted(() => {
       document.addEventListener('click', handleClickOutside)
+      // 组件挂载时加载管理员状态
       loadAdminStatus()
     })
 

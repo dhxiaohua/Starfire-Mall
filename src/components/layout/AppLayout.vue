@@ -5,7 +5,7 @@
     
     <!-- 返回首页按钮（登录/注册/设置页用） -->
     <div v-if="showBackButton" class="back-section">
-      <router-link to="/home" class="back-home">← 返回首页</router-link>
+      <router-link to="/" class="back-home">← 返回首页</router-link>
     </div>
 
     <!-- 统一布局容器 -->

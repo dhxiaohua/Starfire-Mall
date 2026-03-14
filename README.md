@@ -1,144 +1,160 @@
-# 星火游戏设备
+# 星火商场 (Starfire-Mall)
 
-基于 Vue 3 + Express + MySQL 的全栈游戏设备电商网站，提供完整的用户系统、商品管理、客服系统和管理后台。
+一个基于 Vue 3 + Spring Boot 的全栈电竞设备电商网站。
+
+![Vue 3](https://img.shields.io/badge/Vue-3.4+-42b883?style=flat&logo=vue.js)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen?style=flat&logo=spring)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-00758f?style=flat&logo=mysql)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
+## 简介
+
+星火商场是一款专业的电竞设备电商平台，提供完整的商品展示、用户系统、购物车、订单管理和客服系统。
 
 ## 技术栈
 
 ### 前端
-- Vue 3 (Composition API)
-- Vue Router 4
-- Vite
-- Pinia (状态管理)
+- **Vue 3** - 渐进式前端框架 (Composition API)
+- **Vue Router 4** - 路由管理
+- **Vite 5** - 构建工具
+- **Pinia** - 状态管理
 
 ### 后端
-- Express
-- MySQL2
-- CORS
-- Body-Parser
+- **Spring Boot 3.2** - Java 微服务框架
+- **MyBatis Plus** - ORM 框架
+- **Spring Security** - 安全框架
+- **JWT** - 身份认证
+- **WebSocket** - 实时通信
+
+### 数据库
+- **MySQL 8.0** - 关系型数据库
 
 ## 功能特性
 
 ### 用户系统
-- 用户注册（4-16位字母数字账号，6-20位密码）
-- 用户登录（带验证码）
-- 忘记密码
-- 修改密码（需验证旧密码）
-- 个人资料管理（昵称、邮箱、手机、头像上传）
+- 用户注册登录（4-16位账号，6-20位密码）
+- 验证码登录
+- 修改密码
+- 个人资料管理
 
 ### 商品系统
 - 商品分类展示（鼠标、键盘、耳机、手柄）
 - 商品搜索
-- 商品详情查看
+- 商品详情
 - 库存管理
-- 销售统计
+
+### 购物车 & 订单
+- 购物车管理
+- 订单创建与处理
+- 收货地址管理
 
 ### 客服系统
-- 浮动客服按钮（全局显示）
-- 实时聊天（1秒自动刷新）
-- 多用户同时咨询
-- 客服消息提醒
+- 浮动客服按钮
+- 实时聊天
+- 消息提醒
 
 ### 管理员系统
-- 权限申请机制（用户可申请成为管理员）
 - 管理后台
-  - 用户管理（查看、启用/禁用、删除）
-  - 商品管理（增删改查）
-  - 销售统计（销售额、订单数、库存预警）
-  - 权限管理（批准/拒绝申请、撤销管理员）
-  - 客服消息处理
+- 用户管理
+- 商品管理
+- 销售统计
+- 权限管理
 
 ## 项目结构
 
 ```
-├── server/                    # Express 后端
-│   ├── index.js              # 服务器入口、数据库初始化
-│   ├── config/
-│   │   └── index.js          # 数据库配置
-│   └── routes/
-│       ├── users.js          # 用户相关 API
-│       ├── captcha.js        # 验证码 API
-│       ├── admin.js          # 管理员 API
-│       ├── products.js       # 商品管理 API
-│       └── customer.js       # 客服系统 API
+Starfire-Mall/
+├── src/                      # Vue 3 前端
+│   ├── api/                  # API 接口
+│   ├── assets/               # 静态资源
+│   ├── components/           # 组件
+│   │   └── layout/           # 布局组件
+│   ├── composables/          # 组合式函数
+│   ├── router/               # 路由配置
+│   ├── stores/               # 状态管理
+│   └── views/                # 页面视图
 │
-├── src/                      # Vue 前端
-│   ├── main.js              # 应用入口
-│   ├── App.vue              # 根组件
-│   ├── config.js            # 前端配置
-│   ├── api/
-│   │   └── index.js         # API 接口封装
-│   ├── components/
-│   │   ├── CustomerService.vue    # 客服组件
-│   │   ├── StarBackground.vue     # 星空背景
-│   │   ├── WebsiteLayout.vue      # 网站布局
-│   │   └── layout/               # 布局组件
-│   │       ├── AppLayout.vue
-│   │       ├── AppNavbar.vue
-│   │       ├── AppSearchBar.vue
-│   │       └── AppUserDropdown.vue
-│   ├── router/
-│   │   └── index.js         # 路由配置
-│   ├── stores/
-│   │   └── userStore.js     # 用户状态管理
-│   └── views/               # 页面视图
-│       ├── Home.vue         # 首页
-│       ├── Search.vue       # 搜索页
-│       ├── Login.vue        # 登录
-│       ├── Register.vue     # 注册
-│       ├── Settings.vue     # 个人设置
-│       ├── Admin.vue        # 管理后台
-│       └── Page1-5.vue      # 示例页面
+├── backend/                  # Spring Boot 后端
+│   └── src/main/java/
+│       └── com/starfire/
+│           ├── config/       # 配置类
+│           ├── controller/  # 控制器
+│           ├── entity/      # 实体类
+│           ├── mapper/      # 数据访问层
+│           ├── service/     # 服务层
+│           └── security/    # 安全配置
 │
 ├── images/                   # 商品图片
-│   ├── mouse/              # 鼠标图片
-│   ├── keyboard/           # 键盘图片
-│   ├── headset/            # 耳机图片
-│   └── controller/         # 手柄图片
+│   ├── mouse/               # 鼠标
+│   ├── keyboard/            # 键盘
+│   ├── headset/             # 耳机
+│   └── controller/          # 手柄
 │
-├── public/                  # 静态资源
-├── index.html              # HTML 入口
-├── package.json            # 项目配置
-├── vite.config.js          # Vite 配置
-└── README.md               # 项目文档
+└── public/                  # 公开静态资源
 ```
 
 ## 快速开始
 
 ### 环境要求
-- Node.js 16+
-- MySQL 5.7+
 
-### 安装依赖
+- Node.js 18+
+- JDK 17+
+- MySQL 8.0+
+- Maven 3.8+
+
+### 1. 克隆项目
 
 ```bash
+git clone https://github.com/your-repo/starfire-mall.git
+cd starfire-mall
+```
+
+### 2. 配置数据库
+
+创建 MySQL 数据库：
+
+```sql
+CREATE DATABASE starfire_mall CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+### 3. 配置后端
+
+编辑 `backend/src/main/resources/application.yml`：
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/starfire_mall
+    username: root
+    password: your_password  # 改为你的数据库密码
+
+admin:
+  username: admin            # 管理员账号
+  password: admin123         # 管理员密码
+```
+
+### 4. 启动后端
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+后端将在 http://localhost:8080 启动。
+
+### 5. 启动前端
+
+```bash
+# 安装依赖
 npm install
-```
 
-### 配置数据库
-
-编辑 `server/config/index.js` 中的数据库配置：
-
-```javascript
-database: {
-  host: 'localhost',      // MySQL 主机
-  port: 3306,             // 端口
-  user: 'your_mysql_user',  // 用户名
-  password: 'your_mysql_password',  // 密码
-  database: 'web_template'     // 数据库名
-}
-```
-
-### 启动项目
-
-```bash
-# 启动后端服务器（端口 3001）
-npm run server
-
-# 启动前端开发服务器（端口 5173）
+# 启动开发服务器
 npm run dev
 ```
 
-### 构建生产版本
+前端将在 http://localhost:5173 启动。
+
+### 6. 构建生产版本
 
 ```bash
 npm run build
@@ -149,123 +165,128 @@ npm run build
 | 角色 | 用户名 | 密码 |
 |------|--------|------|
 | 管理员 | admin | admin123 |
-| 普通用户 | (自行注册) | (自行设置) |
+| 测试用户 | testuser | test123 |
+
+> ⚠️ 首次启动后请及时修改默认密码！
 
 ## 页面路由
 
-| 路径 | 页面 | 说明 |
+| 路径 | 页面 | 权限 |
 |------|------|------|
-| / | Search | 搜索页（默认首页） |
-| /home | Home | 首页 |
-| /login | Login | 登录页 |
-| /register | Register | 注册页 |
-| /settings | Settings | 个人设置 |
-| /admin | Admin | 管理后台（需管理员权限） |
-| /page1 ~ /page5 | Page1~5 | 示例页面 |
+| `/` | 首页 | 公开 |
+| `/login` | 登录 | 访客 |
+| `/register` | 注册 | 访客 |
+| `/settings` | 个人设置 | 需登录 |
+| `/page1` | 产品列表 | 公开 |
+| `/page2` | 关于我们 | 公开 |
+| `/page3` | 联系我们 | 公开 |
+| `/admin` | 管理后台 | 管理员 |
 
 ## API 接口
+
+### 认证 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/auth/captcha` | 获取验证码 |
+| POST | `/api/auth/check-username` | 检查用户名 |
+| POST | `/api/auth/register` | 用户注册 |
+| POST | `/api/auth/login` | 用户登录 |
+| POST | `/api/auth/change-password` | 修改密码 |
 
 ### 用户 API
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | /api/check-username | 检查账号是否存在 |
-| POST | /api/register | 用户注册 |
-| POST | /api/login | 用户登录 |
-| POST | /api/change-password-with-old | 修改密码（需验证旧密码） |
-| GET | /api/user-info | 获取用户信息 |
-| POST | /api/update-user-info | 更新用户信息 |
-| POST | /api/upload-avatar | 上传头像 |
+| GET | `/api/user/info` | 获取用户信息 |
+| PUT | `/api/user/info` | 更新用户信息 |
+| PUT | `/api/user/password` | 修改密码 |
 
 ### 商品 API
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | /api/products | 获取商品列表 |
-| GET | /api/products/:id | 获取商品详情 |
-| POST | /api/products | 添加商品 |
-| PUT | /api/products/:id | 更新商品 |
-| DELETE | /api/products/:id | 删除商品 |
-| GET | /api/sales/stats | 获取销售统计 |
-| PUT | /api/products/:id/stock | 更新库存 |
-| PUT | /api/products/:id/sales | 更新销量 |
-
-### 客服 API
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/customer/messages | 获取消息列表 |
-| GET | /api/customer/conversation/:username | 获取对话记录 |
-| POST | /api/customer/send | 发送消息 |
-| PUT | /api/customer/read | 标记已读 |
-
-### 验证码 API
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/captcha | 获取验证码 |
+| GET | `/api/products` | 获取商品列表 |
+| GET | `/api/products/{id}` | 获取商品详情 |
+| POST | `/api/products` | 添加商品 |
+| PUT | `/api/products/{id}` | 更新商品 |
+| DELETE | `/api/products/{id}` | 删除商品 |
 
 ### 管理员 API
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | /api/admin/users | 获取所有用户列表 |
-| GET | /api/admin/pending-requests | 获取待审批申请 |
-| POST | /api/admin/approve-request | 审批权限申请 |
-| POST | /api/admin/apply | 申请成为管理员 |
-| GET | /api/admin/user-status | 获取用户权限状态 |
-| POST | /api/admin/revoke | 撤销管理员权限 |
-| GET | /api/admin/stats | 获取统计信息 |
-| POST | /api/admin/update-user-status | 更新用户状态 |
-| POST | /api/admin/delete-user | 删除用户 |
+| GET | `/api/admin/users` | 用户列表 |
+| POST | `/api/admin/approve` | 审批权限 |
+| POST | `/api/admin/revoke` | 撤销权限 |
 
-## 数据库表结构
+## 数据库表
 
-### users 表
+- `users` - 用户表
+- `products` - 商品表
+- `orders` - 订单表
+- `order_items` - 订单项表
+- `cart` - 购物车表
+- `address` - 地址表
+- `categories` - 分类表
+- `customer_messages` - 客服消息表
+- `product_reviews` - 商品评论表
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INT | 主键，自增 |
-| username | VARCHAR(50) | 用户名，唯一 |
-| nickname | VARCHAR(50) | 昵称 |
-| password | VARCHAR(255) | 密码 |
-| email | VARCHAR(100) | 邮箱 |
-| phone | VARCHAR(20) | 手机号 |
-| avatar | TEXT | 头像（Base64） |
-| status | TINYINT | 账号状态（1正常/0禁用） |
-| role | VARCHAR(20) | 角色（admin/user） |
-| admin_status | VARCHAR(20) | 管理员申请状态 |
-| admin_request_time | TIMESTAMP | 申请时间 |
-| create_time | TIMESTAMP | 创建时间 |
-| update_time | TIMESTAMP | 更新时间 |
+详细表结构请参考 `backend/src/main/resources/sql/`
 
-### products 表
+## 环境变量
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INT | 主键，自增 |
-| name | VARCHAR(255) | 商品名称 |
-| category | VARCHAR(50) | 分类（mouse/keyboard/headset/controller） |
-| description | TEXT | 商品描述 |
-| price | DECIMAL(10,2) | 价格 |
-| stock | INT | 库存 |
-| image | VARCHAR(500) | 图片路径 |
-| features | VARCHAR(500) | 特点 |
-| sales | INT | 销量 |
-| status | VARCHAR(20) | 状态 |
-| create_time | DATETIME | 创建时间 |
-| update_time | DATETIME | 更新时间 |
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `DB_PASSWORD` | 数据库密码 | - |
+| `ADMIN_USERNAME` | 管理员账号 | admin |
+| `ADMIN_PASSWORD` | 管理员密码 | admin123 |
 
-## 注意事项
+## 开发指南
 
-1. **验证码**：验证码有效期 5 分钟
-2. **多账户登录**：支持浏览器多标签页同时登录不同账户
-3. **头像存储**：头像以 Base64 格式存储在数据库 avatar 字段
-4. **客服消息**：客服消息自动刷新间隔为 1 秒
-5. **初始商品**：首次启动会自动初始化商品数据
+### 前端开发
 
-## 目录说明
+```bash
+# 代码规范检查
+npm run lint
 
-- `images/` - 存放商品图片（mouse、keyboard、headset、controller）
-- `public/images/` - 公开访问的静态资源
-- `dist/` - 生产构建输出目录
+# 预览生产构建
+npm run preview
+```
+
+### 后端开发
+
+```bash
+# 编译项目
+mvn compile
+
+# 运行测试
+mvn test
+
+# 打包项目
+mvn package
+```
+
+## 贡献指南
+
+欢迎提交 Issue 和 Pull Request！
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/xxx`)
+3. 提交更改 (`git commit -m 'Add xxx'`)
+4. 推送分支 (`git push origin feature/xxx`)
+5. 创建 Pull Request
+
+## 许可证
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
+## 截图
+
+![首页](images/screenshot/home.png)
+![产品页](images/screenshot/products.png)
+![管理后台](images/screenshot/admin.png)
+
+---
+
+⭐ 如果对你有帮助，请给项目点个 Star！

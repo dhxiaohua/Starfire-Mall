@@ -3,12 +3,12 @@
     <div class="nav-content">
       <!-- Logo -->
       <div class="nav-logo">
-        <router-link to="/home">网站Logo</router-link>
+        <router-link to="/">网站Logo</router-link>
       </div>
       
       <!-- 导航链接 -->
       <div class="nav-links">
-        <router-link to="/home">首页</router-link>
+        <router-link to="/">首页</router-link>
         <router-link to="/page1">页面1</router-link>
         <router-link to="/page2">页面2</router-link>
         <router-link to="/page3">页面3</router-link>

@@ -7,12 +7,40 @@ import { server } from '../config';
 // 使用配置中的API基础地址
 const API_BASE_URL = server.apiBaseUrl;
 
-// 获取验证码
-export const getCaptcha = async () => {
+// 获取认证token
+const getAuthHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json'
+  }
+  // 从sessionStorage获取token
+  const userData = sessionStorage.getItem('currentUser')
+  if (userData) {
+    try {
+      const user = JSON.parse(userData)
+      if (user.token) {
+        headers['Authorization'] = `Bearer ${user.token}`
+      }
+    } catch (e) {
+      console.error('解析用户数据失败', e)
+    }
+  }
+  return headers
+}
+
+// 获取验证码 - 支持绑定用户名
+export const getCaptcha = async (username) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/captcha`);
+    let url = `${API_BASE_URL}/auth/captcha`
+    if (username) {
+      url += `?username=${encodeURIComponent(username)}`
+    }
+    const response = await fetch(url);
     const data = await response.json();
-    return data;
+    // 后端返回 { success: true, data: { code, timestamp } }
+    if (data.success && data.data) {
+      return data.data
+    }
+    return { code: null }
   } catch (error) {
     console.error('获取验证码失败:', error);
     return { code: null };
@@ -22,7 +50,7 @@ export const getCaptcha = async () => {
 // 检查账号是否已存在
 export const checkUsername = async (username) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/check-username`, {
+    const response = await fetch(`${API_BASE_URL}/auth/check-username`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -36,15 +64,15 @@ export const checkUsername = async (username) => {
   }
 };
 
-// 用户注册
-export const register = async (username, password, captcha, captchaCode) => {
+// 用户注册 - 验证码已绑定用户名
+export const register = async (username, password, captcha) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/register`, {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username, password, captcha, captchaCode }),
+      body: JSON.stringify({ username, password, captcha }),
     });
     return await response.json();
   } catch (error) {
@@ -53,15 +81,15 @@ export const register = async (username, password, captcha, captchaCode) => {
   }
 };
 
-// 用户登录
-export const login = async (username, password, captcha, captchaCode) => {
+// 用户登录 - 验证码已绑定用户名
+export const login = async (username, password, captcha) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username, password, captcha, captchaCode }),
+      body: JSON.stringify({ username, password, captcha }),
     });
     return await response.json();
   } catch (error) {
@@ -73,7 +101,7 @@ export const login = async (username, password, captcha, captchaCode) => {
 // 修改密码
 export const changePassword = async (username, newPassword, confirmPassword) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/change-password`, {
+    const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +118,7 @@ export const changePassword = async (username, newPassword, confirmPassword) => 
 // 获取用户信息
 export const getUserInfo = async (username) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/user-info?username=${encodeURIComponent(username)}`);
+    const response = await fetch(`${API_BASE_URL}/user/info?username=${encodeURIComponent(username)}`);
     return await response.json();
   } catch (error) {
     console.error('获取用户信息失败:', error);
@@ -101,8 +129,8 @@ export const getUserInfo = async (username) => {
 // 更新用户信息
 export const updateUserInfo = async (username, nickname, email, phone, avatar) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/update-user-info`, {
-      method: 'POST',
+    const response = await fetch(`${API_BASE_URL}/user/update`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -118,8 +146,8 @@ export const updateUserInfo = async (username, nickname, email, phone, avatar) =
 // 修改密码（验证旧密码）
 export const changePasswordWithOld = async (username, oldPassword, newPassword) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/change-password-with-old`, {
-      method: 'POST',
+    const response = await fetch(`${API_BASE_URL}/user/password`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -137,7 +165,9 @@ export const changePasswordWithOld = async (username, oldPassword, newPassword) 
 // 获取所有用户列表
 export const getAdminUsers = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/users`);
+    const response = await fetch(`${API_BASE_URL}/admin/users`, {
+      headers: getAuthHeaders()
+    });
     return await response.json();
   } catch (error) {
     console.error('获取用户列表失败:', error);
@@ -148,7 +178,9 @@ export const getAdminUsers = async () => {
 // 获取待审批的权限申请
 export const getPendingRequests = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/pending-requests`);
+    const response = await fetch(`${API_BASE_URL}/admin/pending-requests`, {
+      headers: getAuthHeaders()
+    });
     return await response.json();
   } catch (error) {
     console.error('获取申请列表失败:', error);
@@ -161,9 +193,7 @@ export const approveRequest = async (userId, approved) => {
   try {
     const response = await fetch(`${API_BASE_URL}/admin/approve-request`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId, approved }),
     });
     return await response.json();
@@ -190,6 +220,21 @@ export const applyAdmin = async (username) => {
   }
 };
 
+// 撤销管理员申请
+export const cancelApplication = async (username) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/cancel-application`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ username }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('撤销申请失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+};
+
 // 获取用户权限状态
 export const getUserAdminStatus = async (username) => {
   try {
@@ -206,9 +251,7 @@ export const revokeAdmin = async (userId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/admin/revoke`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId }),
     });
     return await response.json();
@@ -221,7 +264,9 @@ export const revokeAdmin = async (userId) => {
 // 获取统计信息
 export const getAdminStats = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/stats`);
+    const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+      headers: getAuthHeaders()
+    });
     return await response.json();
   } catch (error) {
     console.error('获取统计信息失败:', error);
@@ -234,9 +279,7 @@ export const updateUserStatus = async (userId, status) => {
   try {
     const response = await fetch(`${API_BASE_URL}/admin/update-user-status`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId, status }),
     });
     return await response.json();
@@ -251,9 +294,7 @@ export const deleteUser = async (userId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/admin/delete-user`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId }),
     });
     return await response.json();
@@ -343,7 +384,7 @@ export const deleteProduct = async (id) => {
 // 获取销售统计
 export const getSalesStats = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/sales/stats`);
+    const response = await fetch(`${API_BASE_URL}/products/stats`);
     return await response.json();
   } catch (error) {
     console.error('获取销售统计失败:', error);

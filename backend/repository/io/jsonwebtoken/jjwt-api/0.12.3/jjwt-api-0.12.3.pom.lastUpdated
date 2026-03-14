@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Thu Mar 12 14:40:16 CST 2026
+@default-alimaven-https\://maven.aliyun.com/repository/public/.lastUpdated=1773297616711
+https\://maven.aliyun.com/repository/public/.error=Could not transfer artifact io.jsonwebtoken\:jjwt-api\:pom\:0.12.3 from/to alimaven (https\://maven.aliyun.com/repository/public)\: D\:\\\u5A31\u4E50\\\u684C\u9762\\Starfire-Mall\\backend\\repository\\io\\jsonwebtoken\\jjwt-api\\0.12.3\\jjwt-api-0.12.3.pom.2536205863007839965.tmp -> D\:\\\u5A31\u4E50\\\u684C\u9762\\Starfire-Mall\\backend\\repository\\io\\jsonwebtoken\\jjwt-api\\0.12.3\\jjwt-api-0.12.3.pom

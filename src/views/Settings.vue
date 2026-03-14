@@ -259,6 +259,7 @@
                 <div v-if="userInfo.adminStatus === 'pending'" class="admin-pending">
                   <span class="pending-icon">⏳</span>
                   <p>您的申请正在审核中，请耐心等待...</p>
+                  <button @click="cancelApplication" class="cancel-btn">撤销申请</button>
                 </div>
                 
                 <div v-else-if="userInfo.adminStatus === 'rejected'" class="admin-rejected">
@@ -323,11 +324,12 @@
 </template>
 
 <script>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, onUnmounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '../components/layout/AppLayout.vue'
 import { userStore, updateCurrentUser } from '../stores/userStore'
-import { getUserInfo, updateUserInfo, changePasswordWithOld, applyAdmin } from '../api'
+import { getUserInfo, updateUserInfo, changePasswordWithOld, applyAdmin, cancelApplication } from '../api'
+import { useWebSocket } from '../composables/useWebSocket'
 
 export default {
   name: 'Settings',
@@ -371,6 +373,41 @@ export default {
       sysNotify: true,
       emailNotify: false
     })
+    
+    // WebSocket通知处理
+    const handleWebSocketNotification = (event) => {
+      const data = event.detail
+      console.log('收到WebSocket通知:', data)
+      
+      if (data.type === 'request_approved') {
+        alert('恭喜！您的管理员申请已通过审核！')
+        userInfo.value.role = 'admin'
+        userStore.value.isAdmin = true
+        userStore.value.adminStatus = 'approved'
+        
+        // 更新sessionStorage中的用户信息
+        const savedUser = sessionStorage.getItem('currentUser')
+        if (savedUser) {
+          const user = JSON.parse(savedUser)
+          user.isAdmin = true
+          sessionStorage.setItem('currentUser', JSON.stringify(user))
+        }
+      } else if (data.type === 'request_rejected') {
+        alert('抱歉！您的管理员申请已被拒绝')
+        userInfo.value.adminStatus = 'rejected'
+        userStore.value.adminStatus = 'rejected'
+      }
+    }
+    
+    // 使用WebSocket
+    let username = ''
+    const savedUser = sessionStorage.getItem('currentUser')
+    if (savedUser) {
+      const user = JSON.parse(savedUser)
+      username = user.username
+    }
+    
+    const { connected, notifications, connect, disconnect, clearNotifications } = useWebSocket(username)
 
     const loadUserInfo = async () => {
       const savedUser = sessionStorage.getItem('currentUser')
@@ -397,16 +434,17 @@ export default {
       if (username) {
         const result = await getUserInfo(username)
         if (result.success) {
-          userInfo.value = result.user
-          userStore.value.nickname = result.user.nickname || ''
-          userStore.value.avatar = result.user.avatar || ''
-          userStore.value.isAdmin = result.user.role === 'admin'
-          userStore.value.adminStatus = result.user.admin_status || 'none'
+          const userData = result.data || result.user
+          userInfo.value = userData
+          userStore.value.nickname = userData.nickname || ''
+          userStore.value.avatar = userData.avatar || ''
+          userStore.value.isAdmin = userData.role === 'admin'
+          userStore.value.adminStatus = userData.admin_status || 'none'
           
-          editForm.nickname = result.user.nickname || ''
-          editForm.email = result.user.email || ''
-          editForm.phone = result.user.phone || ''
-          editForm.avatar = result.user.avatar || ''
+          editForm.nickname = userData.nickname || ''
+          editForm.email = userData.email || ''
+          editForm.phone = userData.phone || ''
+          editForm.avatar = userData.avatar || ''
         }
       }
     }
@@ -502,6 +540,18 @@ export default {
       }
     }
 
+    const handleCancelApplication = async () => {
+      if (!confirm('确定要撤销申请吗？')) return
+      const result = await cancelApplication(userStore.value.username)
+      if (result.success) {
+        alert('已撤销申请')
+        userInfo.value.adminStatus = 'none'
+        userStore.value.adminStatus = 'none'
+      } else {
+        alert(result.message || '撤销失败')
+      }
+    }
+
     const handleLogout = () => {
       if (confirm('确定要退出登录吗？')) {
         userStore.value.isLoggedIn = false
@@ -516,6 +566,14 @@ export default {
 
     onMounted(() => {
       loadUserInfo()
+      // 监听WebSocket通知
+      window.addEventListener('websocket-notification', handleWebSocketNotification)
+    })
+    
+    onUnmounted(() => {
+      // 移除WebSocket通知监听
+      window.removeEventListener('websocket-notification', handleWebSocketNotification)
+      disconnect()
     })
 
     return {
@@ -527,11 +585,14 @@ export default {
       passwordForm,
       preferences,
       userStore,
+      connected,
+      notifications,
       triggerAvatarUpload,
       handleAvatarChange,
       saveProfile,
       changePassword,
       applyAdmin: handleApplyAdmin,
+      cancelApplication: handleCancelApplication,
       handleLogout
     }
   }
@@ -1097,6 +1158,21 @@ input:checked + .slider:before {
 .apply-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 20px rgba(255, 217, 61, 0.5);
+}
+
+.cancel-btn {
+  margin-top: 15px;
+  padding: 10px 24px;
+  background: #666;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.cancel-btn:hover {
+  background: #888;
 }
 
 /* 弹窗 */

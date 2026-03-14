@@ -5,8 +5,8 @@
 
 // 服务器配置
 export const server = {
-  // 后端API地址
-  apiBaseUrl: 'http://localhost:3001/api',
+  // 后端API地址（Java Spring Boot后端）
+  apiBaseUrl: 'http://localhost:8080/api',
   // 后端服务器地址（不含API路径）
-  baseUrl: 'http://localhost:3001'
+  baseUrl: 'http://localhost:8080'
 }

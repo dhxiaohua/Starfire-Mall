@@ -11,6 +11,8 @@
             v-model="loginForm.username" 
             placeholder="请输入账号" 
             class="form-input"
+            @blur="onUsernameBlur"
+            @input="onUsernameInput"
           />
         </div>
         
@@ -30,8 +32,9 @@
         <div class="form-group captcha-group">
           <div class="captcha-display">
             <span class="captcha-label">验证码：</span>
-            <span class="captcha-code">{{ captchaCode }}</span>
-            <span class="refresh-btn" @click="fetchCaptcha">刷新</span>
+            <span class="captcha-code" v-if="captchaCode">{{ captchaCode }}</span>
+            <span class="captcha-placeholder" v-else>输入账号后获取</span>
+            <span class="refresh-btn" @click="fetchCaptcha" v-if="loginForm.username">刷新</span>
           </div>
           <input 
             type="text" 
@@ -119,11 +122,27 @@ export default {
     const captchaCode = ref('')
 
     const fetchCaptcha = async () => {
-      try {
-        const result = await getCaptchaApi()
-        captchaCode.value = result.code || Math.random().toString(36).slice(-4).toUpperCase()
-      } catch (e) {
-        captchaCode.value = Math.random().toString(36).slice(-4).toUpperCase()
+      // 只有在输入用户名后才绑定验证码
+      if (loginForm.value.username && loginForm.value.username.length >= 4) {
+        const result = await getCaptchaApi(loginForm.value.username)
+        if (result.code) {
+          captchaCode.value = result.code
+        }
+      }
+    }
+
+    // 用户名失焦时重新获取验证码（绑定到用户名）
+    const onUsernameBlur = () => {
+      if (loginForm.value.username && loginForm.value.username.length >= 4) {
+        fetchCaptcha()
+      }
+    }
+
+    // 用户名输入时也获取验证码
+    const onUsernameInput = () => {
+      // 当用户名长度达到4位时自动获取验证码
+      if (loginForm.value.username.length >= 4 && !captchaCode.value) {
+        fetchCaptcha()
       }
     }
 
@@ -134,32 +153,34 @@ export default {
         return
       }
       
-      if (loginForm.value.captcha.toUpperCase() !== captchaCode.value) {
-        alert('验证码错误')
-        fetchCaptcha()
-        loginForm.value.captcha = ''
+      if (!loginForm.value.captcha) {
+        alert('请输入验证码')
         return
       }
 
+      // 服务端验证验证码
       const result = await loginApi(
         loginForm.value.username,
         loginForm.value.password,
-        loginForm.value.captcha,
-        captchaCode.value
+        loginForm.value.captcha
       )
       
-      if (result.success) {
+      if (result.success && result.data) {
+        // 从data中获取用户信息（后端返回格式）
+        const user = result.data.user
+        const token = result.data.token
+        
         // 获取完整用户信息
-        const userInfo = await getUserInfo(result.user.username)
-        const userData = userInfo.success ? userInfo.user : result.user
+        const userInfo = await getUserInfo(user.username)
+        const userData = userInfo.success ? userInfo.data : user
         
         // 使用登录API返回的isAdmin状态
-        const isAdmin = result.user.isAdmin || false
+        const isAdmin = user.isAdmin || false
         
         // 获取管理员申请状态
-        const adminStatusResult = await getUserAdminStatus(result.user.username)
-        const adminStatus = adminStatusResult.success ? adminStatusResult.adminStatus : 'none'
-        const canApply = adminStatusResult.success ? adminStatusResult.canApply : false
+        const adminStatusResult = await getUserAdminStatus(user.username)
+        const adminStatus = adminStatusResult.success ? adminStatusResult.data.adminStatus : 'none'
+        const canApply = adminStatusResult.success ? adminStatusResult.data.canApply : false
         
         // 合并用户数据
         const finalUserData = {
@@ -167,7 +188,8 @@ export default {
           isAdmin: isAdmin,
           adminStatus: adminStatus,
           canApply: canApply,
-          isAdminMode: false
+          isAdminMode: false,
+          token: token
         }
         
         // 使用setUserLogin支持多用户登录
@@ -177,7 +199,7 @@ export default {
         userStore.value.isAdminMode = false
         
         alert('登录成功！')
-        router.push('/home')
+        router.push('/')
       } else {
         alert(result.message)
         fetchCaptcha()
@@ -224,7 +246,9 @@ export default {
       showPassword,
       handleLogin,
       handleForgotPassword,
-      fetchCaptcha
+      fetchCaptcha,
+      onUsernameBlur,
+      onUsernameInput
     }
   }
 }
@@ -322,6 +346,12 @@ export default {
   font-size: 18px;
   font-weight: bold;
   letter-spacing: 4px;
+}
+
+.captcha-placeholder {
+  color: #999;
+  font-size: 14px;
+  padding: 8px 10px;
 }
 
 .refresh-btn {

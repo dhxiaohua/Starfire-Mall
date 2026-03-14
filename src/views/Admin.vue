@@ -21,6 +21,15 @@
     <div class="stats-container">
       <div class="stat-card">
         <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <span>👥</span>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.totalUsers }}</div>
+          <div class="stat-label">总用户数</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
           <span>💰</span>
         </div>
         <div class="stat-info">
@@ -458,24 +467,26 @@
               :key="msg.id"
               :class="msg.isMine ? 'is-user-msg' : 'is-service-msg'"
             >
-              <!-- 用户消息：显示在左边，头像在右边 -->
+              <!-- 用户发送的消息 (isMine=true)：显示在左边，头像在左，气泡在头像右边 -->
               <template v-if="msg.isMine">
+                <div class="message-avatar service-avatar">
+                  <img v-if="msg.avatar" :src="msg.avatar" alt="头像" />
+                  <span v-else>{{ selectedUsername?.charAt(0).toUpperCase() }}</span>
+                </div>
+                <div class="message-bubble service-bubble">
+                  <div class="detail-text">{{ msg.content }}</div>
+                  <div class="message-time">{{ msg.time }}</div>
+                </div>
+              </template>
+              <!-- 管理员发送的消息 (isMine=false)：显示在右边，头像在右，气泡在头像左边 -->
+              <template v-else>
                 <div class="message-bubble user-bubble">
                   <div class="detail-text">{{ msg.content }}</div>
                   <div class="message-time">{{ msg.time }}</div>
                 </div>
                 <div class="message-avatar user-avatar">
-                  <span>{{ selectedUsername?.charAt(0).toUpperCase() }}</span>
-                </div>
-              </template>
-              <!-- 客服消息：显示在右边，头像在右边 -->
-              <template v-else>
-                <div class="message-bubble service-bubble">
-                  <div class="detail-text">{{ msg.content }}</div>
-                  <div class="message-time">{{ msg.time }}</div>
-                </div>
-                <div class="message-avatar service-avatar">
-                  <span>服</span>
+                  <img v-if="userStore.avatar" :src="userStore.avatar" alt="头像" />
+                  <span v-else>{{ userStore.username?.charAt(0).toUpperCase() }}</span>
                 </div>
               </template>
             </div>
@@ -604,12 +615,35 @@ import {
   markMessageAsRead,
   sendCustomerReply
 } from '../api'
+import { useWebSocket } from '../composables/useWebSocket'
 
 export default {
   name: 'Admin',
   setup() {
     const router = useRouter()
     const activeTab = ref('products')
+    
+    // WebSocket通知处理
+    const handleWebSocketNotification = async (event) => {
+      const data = event.detail
+      console.log('收到WebSocket通知:', data)
+      
+      if (data.type === 'new_admin_request') {
+        // 刷新待处理申请列表
+        await loadPendingRequests()
+        alert(`新管理员申请通知: ${data.message}`)
+      }
+    }
+    
+    // 使用WebSocket连接到通知服务
+    let username = ''
+    const savedUser = sessionStorage.getItem('currentUser')
+    if (savedUser) {
+      const user = JSON.parse(savedUser)
+      username = user.username || 'admin'
+    }
+    
+    const { connected, notifications, connect, disconnect, clearNotifications } = useWebSocket(username)
     
     // 用户管理相关
     const users = ref([])
@@ -665,8 +699,8 @@ export default {
     // 加载商品列表
     const loadProducts = async () => {
       const result = await getProducts(productFilter.category, productFilter.keyword)
-      if (result.success) {
-        products.value = result.products
+      if (result.success && result.data) {
+        products.value = result.data.products || []
       }
     }
     
@@ -674,12 +708,13 @@ export default {
     const loadSalesStats = async () => {
       const result = await getSalesStats()
       if (result.success) {
-        salesStats.totalSales = result.stats.totalSales
-        salesStats.totalOrders = result.stats.totalOrders
-        salesStats.todaySales = result.stats.todaySales
-        salesStats.todayOrders = result.stats.todayOrders
-        categoryStats.value = result.stats.categoryStats || []
-        lowStockProducts.value = result.stats.lowStockProducts || []
+        const statsData = result.data || result.stats
+        salesStats.totalSales = statsData?.totalSales || 0
+        salesStats.totalOrders = statsData?.totalOrders || 0
+        salesStats.todaySales = statsData?.todaySales || 0
+        salesStats.todayOrders = statsData?.todayOrders || 0
+        categoryStats.value = statsData?.categoryStats || []
+        lowStockProducts.value = statsData?.lowStockProducts || []
       }
     }
     
@@ -687,7 +722,8 @@ export default {
     const loadUsers = async () => {
       const result = await getAdminUsers()
       if (result.success) {
-        users.value = result.users
+        const data = result.data || result
+        users.value = data?.users || []
       }
     }
     
@@ -695,7 +731,8 @@ export default {
     const loadPendingRequests = async () => {
       const result = await getPendingRequests()
       if (result.success) {
-        pendingRequests.value = result.requests
+        const data = result.data || result
+        pendingRequests.value = data?.requests || []
       }
     }
     
@@ -703,10 +740,11 @@ export default {
     const loadStats = async () => {
       const result = await getAdminStats()
       if (result.success) {
-        stats.totalUsers = result.stats.totalUsers
-        stats.adminUsers = result.stats.adminUsers
-        stats.pendingRequests = result.stats.pendingRequests
-        stats.activeUsers = result.stats.activeUsers
+        const data = result.data || result
+        stats.totalUsers = data?.stats?.totalUsers || data?.totalUsers || 0
+        stats.adminUsers = data?.stats?.adminUsers || data?.adminUsers || 0
+        stats.pendingRequests = data?.stats?.pendingRequests || data?.pendingRequests || 0
+        stats.activeUsers = data?.stats?.activeUsers || data?.activeUsers || 0
       }
     }
     
@@ -716,7 +754,8 @@ export default {
       try {
         const result = await getAllCustomerMessages()
         if (result.success) {
-          conversations.value = result.conversations || []
+          const data = result.data || result
+          conversations.value = data.conversations || []
         } else {
           console.error('获取客服消息失败:', result.message)
           conversations.value = []
@@ -731,10 +770,28 @@ export default {
     const loadConversation = async (username) => {
       selectedUsername.value = username
       try {
-        const response = await fetch(`${window.API_BASE_URL || 'http://localhost:3001/api'}/customer/conversation/${encodeURIComponent(username)}`)
+        const response = await fetch(`${window.API_BASE_URL || 'http://localhost:8080/api'}/customer/conversation/${encodeURIComponent(username)}`)
         const result = await response.json()
         if (result.success) {
-          currentMessages.value = result.messages || []
+          const data = result.data || result
+          const rawMessages = data.messages || data.records || []
+          // 获取用户信息以获取头像
+          let userAvatar = ''
+          try {
+            const userResponse = await fetch(`${window.API_BASE_URL || 'http://localhost:8080/api'}/user/info?username=${encodeURIComponent(username)}`)
+            const userResult = await userResponse.json()
+            if (userResult.success) {
+              userAvatar = userResult.data?.avatar || userResult.user?.avatar || ''
+            }
+          } catch (e) {
+            console.error('获取用户头像失败:', e)
+          }
+          // 将 isFromAdmin 转换为 isMine（在后台视角：isFromAdmin=true是客服发的，isMine=false）
+          currentMessages.value = rawMessages.map(msg => ({
+            ...msg,
+            isMine: !msg.isFromAdmin,  // isFromAdmin为false/null时是用户发的消息
+            avatar: msg.isFromAdmin ? '' : userAvatar  // 用户消息使用用户头像
+          }))
           // 滚动到最新消息
           nextTick(() => {
             const detailContent = document.querySelector('.detail-content')
@@ -971,7 +1028,7 @@ export default {
     // 返回用户端
     const switchToUserMode = () => {
       userStore.value.isAdminMode = false
-      router.push('/home')
+      router.push('/')
     }
     
     onMounted(() => {
@@ -981,6 +1038,9 @@ export default {
       loadPendingRequests()
       loadStats()
       loadMessages()
+      
+      // 监听WebSocket通知
+      window.addEventListener('websocket-notification', handleWebSocketNotification)
       
       // 自动刷新客服消息列表，每秒刷新一次
       messageRefreshTimer = setInterval(() => {
@@ -997,6 +1057,10 @@ export default {
       if (messageRefreshTimer) {
         clearInterval(messageRefreshTimer)
       }
+      // 移除WebSocket事件监听
+      window.removeEventListener('websocket-notification', handleWebSocketNotification)
+      // 断开WebSocket连接
+      disconnect()
     })
     
     return {
@@ -1008,6 +1072,8 @@ export default {
       getCategoryName,
       getCategoryIcon,
       switchToUserMode,
+      connected,
+      notifications,
       
       // 用户管理
       users,
@@ -1871,6 +1937,9 @@ export default {
   font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
+  border: 2px solid #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  overflow: hidden;
 }
 
 .detail-message-item .message-avatar.user-avatar {
@@ -1879,6 +1948,12 @@ export default {
 
 .detail-message-item .message-avatar.service-avatar {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.detail-message-item .message-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .message-bubble {

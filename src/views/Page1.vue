@@ -280,11 +280,27 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import WebsiteLayout from '../components/WebsiteLayout.vue'
+import { getProducts } from '../api/index'
 
-// 产品数据
+// 从后端获取产品数据
+const productsFromBackend = ref([])
+
+// 获取产品列表
+const fetchProducts = async () => {
+  try {
+    const result = await getProducts()
+    if (result.success && result.data) {
+      productsFromBackend.value = result.data.products || []
+    }
+  } catch (error) {
+    console.error('获取产品失败:', error)
+  }
+}
+
+// 产品数据（保留本地数据作为后备）
 const allProducts = [
   // 鼠标
   { id: 1, category: 'mouse', name: '星火RGB电竞鼠标', description: '16000DPI光学传感器，支持RGB灯效', price: 299, originalPrice: 399, image: '/images/mouse/1.jpg', features: ['16000 DPI', 'RGB灯效', '轻量化'] },
@@ -315,7 +331,7 @@ const allProducts = [
   // 手柄
   { id: 24, category: 'controller', name: '星火无线游戏手柄', description: '多平台兼容，震动反馈', price: 299, originalPrice: 399, image: '/images/controller/1.jpg', features: ['无线', '双震动', '多平台'] },
   { id: 25, category: 'controller', name: '星火有线游戏手柄', description: '0延迟，竞技首选', price: 199, originalPrice: 299, image: '/images/controller/2.jpg', features: ['有线', '0延迟', '线性扳机'] },
-  { id: 26, category: 'controller', name: '星火精英游戏手柄', name: '星火精英游戏手柄', description: '自定义宏，4背键', price: 499, image: '/images/controller/3.jpg', features: ['4背键', '自定义', '摇杆'] },
+  { id: 26, category: 'controller', name: '星火精英游戏手柄', description: '自定义宏，4背键', price: 499, image: '/images/controller/3.jpg', features: ['4背键', '自定义', '摇杆'] },
   { id: 27, category: 'controller', name: '星火蓝牙手柄', description: '蓝牙连接，手机也能玩', price: 249, originalPrice: 349, image: '/images/controller/4.jpg', features: ['蓝牙', '安卓/iOS', '体感'] },
   { id: 28, category: 'controller', name: '星火手柄套装', description: '含底座和耳机，一站式', price: 599, image: '/images/controller/5.jpg', features: ['套装', '充电底座', '耳机'] },
   { id: 29, category: 'controller', name: '星火复古手柄', description: '经典造型，怀旧体验', price: 179, image: '/images/controller/6.jpg', features: ['复古', 'USB-C', '震动'] },
@@ -346,6 +362,39 @@ export default {
     const orderItems = ref([])
     const cartItems = ref([])
     const cartAnimations = ref([])
+    const products = ref([])
+    const loading = ref(true)
+    
+    // 页面加载时获取产品
+    onMounted(async () => {
+      await fetchProducts()
+      // 优先使用后端数据，如果没有则使用本地数据
+      if (productsFromBackend.value.length > 0) {
+        products.value = productsFromBackend.value
+      } else {
+        products.value = allProducts
+      }
+      loading.value = false
+      startAdCarousel()
+    })
+    
+    // 监听分类变化，重新获取产品
+    watch(activeCategory, async (newCategory) => {
+      loading.value = true
+      try {
+        const result = await getProducts(newCategory === 'all' ? null : newCategory)
+        if (result.success && result.data) {
+          products.value = result.data.products || []
+        } else {
+          // 如果API失败，使用本地数据过滤
+          products.value = newCategory === 'all' ? allProducts : allProducts.filter(p => p.category === newCategory)
+        }
+      } catch (error) {
+        console.error('获取产品失败:', error)
+        products.value = newCategory === 'all' ? allProducts : allProducts.filter(p => p.category === newCategory)
+      }
+      loading.value = false
+    })
     
     // 广告轮播图数据
     const adBanners = [
@@ -372,10 +421,11 @@ export default {
     
     // 过滤产品
     const filteredProducts = computed(() => {
+      const productList = products.value.length > 0 ? products.value : allProducts
       if (activeCategory.value === 'all') {
-        return allProducts
+        return productList
       }
-      return allProducts.filter(p => p.category === activeCategory.value)
+      return productList.filter(p => p.category === activeCategory.value)
     })
     
     // 购物车计算
