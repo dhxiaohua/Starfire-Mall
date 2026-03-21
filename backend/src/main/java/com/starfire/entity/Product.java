@@ -14,6 +14,7 @@ public class Product {
     
     private Long categoryId;
     
+    @TableField(exist = false)
     private String category;
     
     private String description;

@@ -20,6 +20,10 @@ public class ProductReview {
     
     private String content;
     
+    private String images;
+    
+    private Integer status;
+    
     private LocalDateTime createTime;
     
     private LocalDateTime updateTime;
@@ -63,6 +67,22 @@ public class ProductReview {
     
     public void setContent(String content) {
         this.content = content;
+    }
+    
+    public String getImages() {
+        return images;
+    }
+    
+    public void setImages(String images) {
+        this.images = images;
+    }
+    
+    public Integer getStatus() {
+        return status;
+    }
+    
+    public void setStatus(Integer status) {
+        this.status = status;
     }
     
     public LocalDateTime getCreateTime() {

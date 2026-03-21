@@ -9,18 +9,19 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
     
+    private final NotificationHandler notificationHandler;
+    private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+    
+    public WebSocketConfig(NotificationHandler notificationHandler, 
+                           WebSocketAuthInterceptor webSocketAuthInterceptor) {
+        this.notificationHandler = notificationHandler;
+        this.webSocketAuthInterceptor = webSocketAuthInterceptor;
+    }
+    
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(notificationHandler(), "/ws/notifications")
-                .addInterceptors(webSocketAuthInterceptor())
+        registry.addHandler(notificationHandler, "/ws/notifications")
+                .addInterceptors(webSocketAuthInterceptor)
                 .setAllowedOrigins("*");
-    }
-    
-    public NotificationHandler notificationHandler() {
-        return new NotificationHandler();
-    }
-    
-    public WebSocketAuthInterceptor webSocketAuthInterceptor() {
-        return new WebSocketAuthInterceptor();
     }
 }

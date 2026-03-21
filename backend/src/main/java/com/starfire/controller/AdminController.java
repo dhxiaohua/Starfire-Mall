@@ -19,10 +19,12 @@ public class AdminController {
     
     private final UserService userService;
     private final ProductService productService;
+    private final com.starfire.service.OrderService orderService;
     
-    public AdminController(UserService userService, ProductService productService) {
+    public AdminController(UserService userService, ProductService productService, com.starfire.service.OrderService orderService) {
         this.userService = userService;
         this.productService = productService;
+        this.orderService = orderService;
     }
     
     // 获取所有用户列表
@@ -158,6 +160,16 @@ public class AdminController {
         stats.put("adminUsers", userService.getAdminUsers());
         stats.put("pendingRequests", userService.getPendingRequestsCount());
         stats.put("activeUsers", userService.getActiveUsers());
+        
+        // 添加订单销售统计
+        Map<String, Object> orderStats = orderService.getStats();
+        stats.put("totalSales", orderStats.get("totalSales"));
+        stats.put("totalOrders", orderStats.get("totalOrders"));
+        stats.put("todaySales", orderStats.get("todaySales"));
+        stats.put("todayOrders", orderStats.get("todayOrders"));
+        stats.put("pendingOrders", orderStats.get("pendingOrders"));
+        stats.put("shippingOrders", orderStats.get("shippingOrders"));
+        stats.put("completedOrders", orderStats.get("completedOrders"));
         
         return ApiResponse.success(stats);
     }

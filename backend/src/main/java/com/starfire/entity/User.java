@@ -126,6 +126,14 @@ public class User {
         this.adminRequestTime = adminRequestTime;
     }
     
+    public LocalDateTime getLastLoginTime() {
+        return lastLoginTime;
+    }
+    
+    public void setLastLoginTime(LocalDateTime lastLoginTime) {
+        this.lastLoginTime = lastLoginTime;
+    }
+    
     public LocalDateTime getCreateTime() {
         return createTime;
     }

@@ -4,16 +4,48 @@ server:
 spring:
   application:
     name: starfire-mall
-  
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/starfire_mall?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://127.0.0.1:3306/starfire_mall?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: ${DB_PASSWORD:}
-  
+    password: your_password
+    hikari:
+      auto-commit: true
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      maximum-pool-size: 10
+      minimum-idle: 5
+      validation-timeout: 5000
+      initialization-fail-timeout: -1
+
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+
+  redis:
+    host: localhost
+    port: 6379
+    password:
+    database: 0
+    timeout: 10000
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1
+        max-idle: 8
+        min-idle: 0
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# 文件上传配置
+file:
+  upload:
+    path: /Starfire-Mall/frontend/public/images/avatars
 
 mybatis-plus:
   configuration:
@@ -29,7 +61,7 @@ mybatis-plus:
 
 # JWT配置
 jwt:
-  secret: ${JWT_SECRET:}
+  secret:
   expiration: 86400000  # 24小时
 
 # 验证码配置
@@ -38,5 +70,5 @@ captcha:
 
 # 管理后台账号
 admin:
-  username: ${ADMIN_USERNAME:}
-  password: ${ADMIN_PASSWORD:}
+  username: admin
+  password: admin123

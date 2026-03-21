@@ -30,38 +30,74 @@ public class ProductService {
     }
     
     public Page<Product> getProductList(String category, String keyword, int page, int size) {
-        Page<Product> pageParam = new Page<>(page, size);
-        QueryWrapper<Product> wrapper = new QueryWrapper<>();
-        
-        // 根据分类ID或slug查询
-        if (category != null && !category.equals("all")) {
-            try {
-                Long categoryId = Long.parseLong(category);
-                wrapper.eq("category_id", categoryId);
-            } catch (NumberFormatException e) {
-                // 如果不是数字，可能是slug
-                wrapper.eq("category_id", Long.parseLong(category));
+            Page<Product> pageParam = new Page<>(page, size);
+            QueryWrapper<Product> wrapper = new QueryWrapper<>();
+            
+            // 根据分类查询
+            if (category != null && !category.equals("all")) {
+                try {
+                    Long categoryId = Long.parseLong(category);
+                    wrapper.eq("category_id", categoryId);
+                } catch (NumberFormatException e) {
+                    // 如果不是数字，可能是分类名称（mouse, keyboard等），需要转换为分类ID
+                    Long categoryId = convertCategoryNameToId(category);
+                    if (categoryId != null) {
+                        wrapper.eq("category_id", categoryId);
+                    }
+                }
             }
+            
+            if (keyword != null && !keyword.isEmpty()) {
+                wrapper.and(w -> w.like("name", keyword).or().like("description", keyword));
+            }
+            
+            wrapper.eq("status", 1);
+            // 优先按创建时间降序排序，让新商品排在前面，其次按销量排序
+            wrapper.orderByDesc("create_time", "sales");
+            
+            return productMapper.selectPage(pageParam, wrapper);
         }
         
-        if (keyword != null && !keyword.isEmpty()) {
-            wrapper.and(w -> w.like("name", keyword).or().like("description", keyword));
-        }
-        
-        wrapper.eq("status", 1);
-        wrapper.orderByDesc("sales", "create_time");
-        
-        return productMapper.selectPage(pageParam, wrapper);
-    }
-    
+        /**
+         * 将分类名称转换为分类ID
+         */
+        private Long convertCategoryNameToId(String categoryName) {
+            Map<String, Long> categoryMap = new HashMap<>();
+            categoryMap.put("mouse", 1L);
+            categoryMap.put("keyboard", 2L);
+            categoryMap.put("headset", 3L);
+            categoryMap.put("controller", 4L);
+            return categoryMap.get(categoryName);
+        }    
     public Product getProductById(Long id) {
         return productMapper.selectById(id);
     }
     
-    public boolean addProduct(Product product) {
-        product.setStatus(1);
-        product.setSales(0);
-        return productMapper.insert(product) > 0;
+    public Product addProduct(Product product) {
+        System.out.println("=== 添加商品开始 ===");
+        System.out.println("商品名称: " + product.getName());
+        System.out.println("商品分类ID: " + product.getCategoryId());
+        System.out.println("商品价格: " + product.getPrice());
+        System.out.println("商品库存: " + product.getStock());
+        System.out.println("商品图片: " + product.getImage());
+        System.out.println("商品状态: " + product.getStatus());
+        
+        if (product.getStatus() == null) {
+            product.setStatus(1);
+        }
+        if (product.getSales() == null) {
+            product.setSales(0);
+        }
+        
+        int result = productMapper.insert(product);
+        System.out.println("插入结果: " + result);
+        System.out.println("添加的商品ID: " + product.getId());
+        System.out.println("=== 添加商品结束 ===");
+        
+        if (result > 0) {
+            return productMapper.selectById(product.getId());
+        }
+        return null;
     }
     
     public boolean updateProduct(Product product) {

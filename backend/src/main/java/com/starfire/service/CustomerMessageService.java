@@ -29,9 +29,17 @@ public class CustomerMessageService {
     
     private void ensureAvatarColumn() {
         try {
-            jdbcTemplate.execute("SELECT avatar FROM customer_messages LIMIT 1");
+            // 先检查表是否存在
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS customer_messages (id BIGINT PRIMARY KEY AUTO_INCREMENT, username VARCHAR(50) NOT NULL, content TEXT NOT NULL, is_from_admin BOOLEAN NOT NULL, is_read BOOLEAN NOT NULL DEFAULT FALSE, create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, avatar VARCHAR(500) DEFAULT NULL)");
+            // 然后检查avatar列是否存在
+            try {
+                jdbcTemplate.execute("SELECT avatar FROM customer_messages LIMIT 1");
+            } catch (Exception e) {
+                jdbcTemplate.execute("ALTER TABLE customer_messages ADD COLUMN avatar VARCHAR(500) DEFAULT NULL");
+            }
         } catch (Exception e) {
-            jdbcTemplate.execute("ALTER TABLE customer_messages ADD COLUMN avatar VARCHAR(500) DEFAULT NULL");
+            // 忽略异常，不影响应用启动
+            e.printStackTrace();
         }
     }
     

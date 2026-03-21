@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.starfire.mapper.OrderMapper">
+    
+    <select id="selectOrdersWithDetails" resultType="com.starfire.entity.Order">
+        SELECT * FROM orders
+        WHERE deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (order_no LIKE CONCAT('%', #{keyword}, '%')
+                 OR username LIKE CONCAT('%', #{keyword}, '%')
+                 OR receiver_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+    
+</mapper>

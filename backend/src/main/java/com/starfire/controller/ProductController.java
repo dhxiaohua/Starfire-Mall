@@ -77,12 +77,16 @@ public class ProductController {
     
     // 添加商品（管理员）
     @PostMapping
-    public ApiResponse<String> addProduct(@RequestBody Product product) {
-        boolean success = productService.addProduct(product);
+    public ApiResponse<Product> addProduct(@RequestBody Product product) {
+        System.out.println("ProductController: 收到添加商品请求，商品名称: " + product.getName());
         
-        if (success) {
-            return ApiResponse.success("商品添加成功", null);
+        Product savedProduct = productService.addProduct(product);
+        
+        if (savedProduct != null) {
+            System.out.println("ProductController: 商品添加成功，ID: " + savedProduct.getId());
+            return ApiResponse.success(savedProduct);
         } else {
+            System.out.println("ProductController: 商品添加失败");
             return ApiResponse.error("商品添加失败");
         }
     }

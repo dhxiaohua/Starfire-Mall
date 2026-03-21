@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 
 @TableName("order_items")
 public class OrderItem {
-    
     @TableId(type = IdType.AUTO)
     private Long id;
     
@@ -27,31 +26,87 @@ public class OrderItem {
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     
+    @TableLogic
+    private Integer deleted;
+
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
     
-    public Long getOrderId() { return orderId; }
-    public void setOrderId(Long orderId) { this.orderId = orderId; }
+    public void setId(Long id) {
+        this.id = id;
+    }
     
-    public Long getProductId() { return productId; }
-    public void setProductId(Long productId) { this.productId = productId; }
+    public Long getOrderId() {
+        return orderId;
+    }
     
-    public String getProductName() { return productName; }
-    public void setProductName(String productName) { this.productName = productName; }
+    public void setOrderId(Long orderId) {
+        this.orderId = orderId;
+    }
     
-    public String getProductImage() { return productImage; }
-    public void setProductImage(String productImage) { this.productImage = productImage; }
+    public Long getProductId() {
+        return productId;
+    }
     
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
+    public void setProductId(Long productId) {
+        this.productId = productId;
+    }
     
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public String getProductName() {
+        return productName;
+    }
     
-    public BigDecimal getSubtotal() { return subtotal; }
-    public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
     
-    public LocalDateTime getCreateTime() { return createTime; }
-    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+    public String getProductImage() {
+        return productImage;
+    }
+    
+    public void setProductImage(String productImage) {
+        this.productImage = productImage;
+    }
+    
+    public BigDecimal getPrice() {
+        return price;
+    }
+    
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+    
+    public Integer getQuantity() {
+        return quantity;
+    }
+    
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+    
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
+    
+    public void setSubtotal(BigDecimal subtotal) {
+        this.subtotal = subtotal;
+    }
+    
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+    
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+    
+    public Integer getDeleted() {
+        return deleted;
+    }
+    
+    public void setDeleted(Integer deleted) {
+        this.deleted = deleted;
+    }
 }
