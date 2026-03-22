@@ -123,7 +123,7 @@ export default {
   },
   setup() {
     const team = [
-      { avatar: '👨‍💻', name: '林星辰', role: '创始人 & CEO', desc: '前大厂游戏设计师，热爱游戏，致力于为玩家打造最好的装备' },
+      { avatar: '👨‍💻', name: '筱华', role: '创始人 & CEO', desc: '前大厂游戏设计师，热爱游戏，致力于为玩家打造最好的装备' },
       { avatar: '👩‍💼', name: '苏小梦', role: '产品总监', desc: '深耕游戏外设领域10年，对产品有极致追求' },
       { avatar: '👨‍🔬', name: '陈极客', role: '技术总监', desc: '黑客级技术大牛，负责产品研发与技术创新' },
       { avatar: '👩‍🎨', name: '王艺涵', role: '设计总监', desc: '美学达人，让每一款产品都成为艺术品' }

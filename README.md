@@ -211,12 +211,12 @@ admin:
 
 file:
   upload:
-    path:  /Starfire-Mall/frontend/public/images/avatars# 你的文件上传路径
+    path: Starfire-Mall/frontend/public/images/avatars  # 你的文件上传路径（相对路径）
 
 
     # JWT配置
 jwt:
-  secret: your_key
+  secret:  # JWT 密钥（必须填写，建议使用复杂的随机字符串）
   expiration: 86400000  # 24小时
 ```
 

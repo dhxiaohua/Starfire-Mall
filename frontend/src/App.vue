@@ -6,13 +6,14 @@
       </transition>
     </router-view>
     
-    <!-- 客服悬浮按钮 - 在所有页面显示 -->
-    <CustomerService v-if="showCustomerService" />
+    <!-- 客服悬浮按钮 - 只在产品页面显示 -->
+    <CustomerService v-if="showCustomerService && isProductsPage" />
   </div>
 </template>
 
 <script>
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import CustomerService from './components/CustomerService.vue'
 import { userStore } from './stores/userStore'
 export default {
@@ -21,13 +22,21 @@ export default {
     CustomerService
   },
   setup() {
+    const route = useRoute()
+    
     // 仅普通用户显示客服按钮
     const showCustomerService = computed(() => {
       return userStore.value.isLoggedIn && !userStore.value.isAdmin && !userStore.value.isAdminMode
     })
     
+    // 只在产品页面显示
+    const isProductsPage = computed(() => {
+      return route.path === '/products'
+    })
+    
     return {
-      showCustomerService
+      showCustomerService,
+      isProductsPage
     }
   }
 }

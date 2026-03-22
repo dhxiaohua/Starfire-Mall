@@ -34,7 +34,7 @@
         :class="{ active: activeCategory === 'all' }"
         @click="activeCategory = 'all'"
       >
-        <span class="tab-icon">🏠</span>
+        <span class="tab-icon">🎮</span>
         <span>全部</span>
       </div>
       <div 
@@ -95,7 +95,7 @@
           <h3>{{ product.name }}</h3>
           <p class="product-desc">{{ product.description }}</p>
           <div class="product-price">
-            <span class="price">¥{{ product.price.toFixed(2) }}</span>
+            <span class="price">￥{{ product.price.toFixed(2) }}</span>
           </div>
           <div class="product-actions">
             <button class="buy-btn" @click.stop="buyNow(product)">立即购买</button>
@@ -140,7 +140,7 @@
           <img :src="item.image" :alt="item.name" class="item-image" />
           <div class="item-info">
             <h4>{{ item.name }}</h4>
-            <span class="item-price">¥{{ item.price.toFixed(2) }}</span>
+            <span class="item-price">￥{{ item.price.toFixed(2) }}</span>
           </div>
           <button class="remove-item" @click="removeFromCart(index)">
             <svg viewBox="0 0 20 20" fill="currentColor">
@@ -158,7 +158,7 @@
       <div class="cart-footer" v-if="cartItems.length > 0">
         <div class="cart-total">
           <span>总计：</span>
-          <span class="total-price">¥{{ cartTotal.toFixed(2) }}</span>
+          <span class="total-price">￥{{ cartTotal.toFixed(2) }}</span>
         </div>
         <button class="checkout-btn" @click="checkout">结算</button>
       </div>
@@ -174,48 +174,249 @@
         </button>
         
         <div class="modal-product">
-          <div class="modal-image">
-            <img :src="selectedProduct.image" :alt="selectedProduct.name" />
+          <!-- 商品图片轮播 -->
+          <div class="modal-gallery">
+            <div class="gallery-main" @click="openImageViewer">
+              <img :src="currentGalleryImage" :alt="selectedProduct.name" />
+              <div class="discount-badge" v-if="selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price">
+                {{ Math.round((1 - selectedProduct.price / selectedProduct.originalPrice) * 100) }}% OFF
+              </div>
+              <div class="view-hint">
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                </svg>
+                点击查看大图
+              </div>
+            </div>
+            <div class="gallery-thumbs" v-if="productImages.length > 1">
+              <div 
+                v-for="(img, i) in productImages" 
+                :key="i"
+                class="thumb-item"
+                :class="{ active: currentGalleryIndex === i }"
+                @click="currentGalleryIndex = i"
+              >
+                <img :src="img" :alt="`${selectedProduct.name} ${i + 1}`" />
+              </div>
+            </div>
           </div>
+          
           <div class="modal-info">
+            <!-- 商品分类标签 -->
+            <div class="product-category">
+              <span class="category-tag">{{ getCategoryName(selectedProduct.category) }}</span>
+            </div>
+            
             <h2>{{ selectedProduct.name }}</h2>
+            
+            <!-- 评分和销量 -->
+            <div class="product-stats">
+              <div class="rating-box">
+                <div class="stars">
+                  <span v-for="n in 5" :key="n" :class="{ filled: n <= Math.round(selectedProduct.rating || 4.5) }">★</span>
+                </div>
+                <span class="rating-value">{{ selectedProduct.rating || 4.5 }}</span>
+                <span class="review-count">({{ selectedProduct.reviewCount || 0 }} 条评价)</span>
+              </div>
+              <div class="sales-info">
+                <span>已售 {{ selectedProduct.sales || 0 }} 件</span>
+              </div>
+            </div>
+            
             <p class="modal-desc">{{ selectedProduct.description }}</p>
+            
+            <!-- 价格信息 -->
             <div class="modal-price">
-              <span class="current-price">¥{{ selectedProduct.price.toFixed(2) }}</span>
+              <span class="current-price">￥{{ selectedProduct.price.toFixed(2) }}</span>
               <span class="original-price" v-if="selectedProduct.originalPrice">
-                ¥{{ selectedProduct.originalPrice.toFixed(2) }}
+                ￥{{ selectedProduct.originalPrice.toFixed(2) }}
+              </span>
+              <span class="save-money" v-if="selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price">
+                省 ￥{{ (selectedProduct.originalPrice - selectedProduct.price).toFixed(2) }}
               </span>
             </div>
-            <div class="modal-features">
+            
+            <!-- 库存信息 -->
+            <div class="stock-info">
+              <span class="stock-label">库存：</span>
+              <span :class="{ 'low-stock': selectedProduct.stock && selectedProduct.stock < 10, 'out-of-stock': selectedProduct.stock === 0 }">
+                {{ selectedProduct.stock === 0 ? '暂时缺货' : selectedProduct.stock + ' 件' }}
+              </span>
+            </div>
+            
+            <!-- 商品特性 -->
+            <div class="modal-features" v-if="selectedProduct.features && selectedProduct.features.length > 0">
               <span class="feature" v-for="(feat, i) in selectedProduct.features" :key="i">
                 {{ feat }}
               </span>
             </div>
+            
+            <!-- 上架时间 -->
+            <div class="product-date" v-if="selectedProduct.createTime">
+              <span>上架时间：{{ formatDate(selectedProduct.createTime) }}</span>
+            </div>
+            
+            <!-- 购买按钮 -->
             <div class="modal-actions">
-              <button class="buy-now-btn" @click="buyNow(selectedProduct)">立即购买</button>
-              <button class="add-cart-btn" @click="addToCart(selectedProduct)">
+              <button 
+                class="buy-now-btn" 
+                @click="buyNow(selectedProduct)"
+                :disabled="selectedProduct.stock === 0"
+              >
+                {{ selectedProduct.stock === 0 ? '暂时缺货' : '立即购买' }}
+              </button>
+              <button 
+                class="add-cart-btn" 
+                @click="addToCart(selectedProduct)"
+                :disabled="selectedProduct.stock === 0"
+              >
                 <svg viewBox="0 0 20 20" fill="currentColor">
                   <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
                 </svg>
-                加入购物车
+                {{ selectedProduct.stock === 0 ? '暂时缺货' : '加入购物车' }}
               </button>
             </div>
           </div>
         </div>
         
-        <!-- 买家评价 -->
-        <div class="modal-reviews">
-          <h3>买家评价</h3>
-          <div class="reviews-list">
-            <div class="review-item" v-for="(review, i) in selectedProduct.reviews" :key="i">
-              <div class="review-header">
-                <span class="review-user">{{ review.user }}</span>
-                <div class="review-stars">
-                  <span v-for="n in 5" :key="n" :class="{ filled: n <= review.rating }">★</span>
+        <!-- 商品详细信息 -->
+        <div class="modal-details">
+          <div class="detail-tabs">
+            <div 
+              class="detail-tab" 
+              :class="{ active: activeDetailTab === 'desc' }"
+              @click="activeDetailTab = 'desc'"
+            >
+              商品详情
+            </div>
+            <div 
+              class="detail-tab" 
+              :class="{ active: activeDetailTab === 'specs' }"
+              @click="activeDetailTab = 'specs'"
+            >
+              规格参数
+            </div>
+            <div 
+              class="detail-tab" 
+              :class="{ active: activeDetailTab === 'reviews' }"
+              @click="activeDetailTab = 'reviews'"
+            >
+              用户评价 ({{ selectedProduct.reviewCount || 0 }})
+            </div>
+          </div>
+          
+          <!-- 商品详情内容 -->
+          <div class="detail-content" v-if="activeDetailTab === 'desc'">
+            <div class="desc-content">
+              <h3>{{ selectedProduct.name }}</h3>
+              <p>{{ selectedProduct.description }}</p>
+              <div class="detail-features" v-if="selectedProduct.features && selectedProduct.features.length > 0">
+                <h4>产品特点：</h4>
+                <ul>
+                  <li v-for="(feat, i) in selectedProduct.features" :key="i">{{ feat }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 规格参数 -->
+          <div class="detail-content" v-if="activeDetailTab === 'specs'">
+            <div class="specs-table">
+              <div class="spec-row">
+                <span class="spec-label">商品名称</span>
+                <span class="spec-value">{{ selectedProduct.name }}</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">商品分类</span>
+                <span class="spec-value">{{ getCategoryName(selectedProduct.category) }}</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">商品价格</span>
+                <span class="spec-value">￥{{ selectedProduct.price.toFixed(2) }}</span>
+              </div>
+              <div class="spec-row" v-if="selectedProduct.originalPrice">
+                <span class="spec-label">原价</span>
+                <span class="spec-value">￥{{ selectedProduct.originalPrice.toFixed(2) }}</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">库存</span>
+                <span class="spec-value">{{ selectedProduct.stock || 0 }} 件</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">销量</span>
+                <span class="spec-value">{{ selectedProduct.sales || 0 }} 件</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">评分</span>
+                <span class="spec-value">{{ selectedProduct.rating || 4.5 }} 分</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">评价数</span>
+                <span class="spec-value">{{ selectedProduct.reviewCount || 0 }} 条</span>
+              </div>
+              <div class="spec-row" v-if="selectedProduct.createTime">
+                <span class="spec-label">上架时间</span>
+                <span class="spec-value">{{ formatDate(selectedProduct.createTime) }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 用户评价 -->
+          <div class="detail-content" v-if="activeDetailTab === 'reviews'">
+            <div class="reviews-summary">
+              <div class="summary-rating">
+                <div class="rating-score">{{ selectedProduct.rating || 4.5 }}</div>
+                <div class="rating-stars">
+                  <span v-for="n in 5" :key="n" :class="{ filled: n <= Math.round(selectedProduct.rating || 4.5) }">★</span>
+                </div>
+                <div class="rating-total">{{ selectedProduct.reviewCount || 0 }} 条评价</div>
+              </div>
+            </div>
+            
+            <!-- 评论表单 -->
+            <div class="review-form">
+              <h4>发表评价</h4>
+              <div class="rating-input">
+                <span>您的评分：</span>
+                <div class="star-rating-input">
+                  <span 
+                    v-for="n in 5" 
+                    :key="n" 
+                    :class="{ filled: n <= newReview.rating }"
+                    @click="newReview.rating = n"
+                  >
+                    ★
+                  </span>
                 </div>
               </div>
-              <p class="review-content">{{ review.content }}</p>
-              <span class="review-date">{{ review.date }}</span>
+              <textarea 
+                v-model="newReview.content"
+                class="review-textarea"
+                placeholder="请输入您的评价内容..."
+                rows="4"
+                maxlength="500"
+              ></textarea>
+              <div class="review-actions">
+                <span class="char-count">{{ newReview.content.length }}/500</span>
+                <button class="submit-review-btn" @click="submitReview" :disabled="!newReview.rating || !newReview.content.trim()">
+                  提交评价
+                </button>
+              </div>
+            </div>
+            
+            <!-- 评论列表 -->
+            <div class="reviews-list">
+              <div class="review-item" v-for="(review, i) in selectedProduct.reviews" :key="i">
+                <div class="review-header">
+                  <span class="review-user">{{ review.user }}</span>
+                  <div class="review-stars">
+                    <span v-for="n in 5" :key="n" :class="{ filled: n <= review.rating }">★</span>
+                  </div>
+                  <span class="review-date">{{ review.date }}</span>
+                </div>
+                <p class="review-content">{{ review.content }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -232,22 +433,22 @@
             <div class="order-item-info">
               <h4>{{ item.name }}</h4>
               <span>× {{ item.quantity }}</span>
-              <span class="item-total">¥{{ (item.price * item.quantity).toFixed(2) }}</span>
+              <span class="item-total">￥{{ (item.price * item.quantity).toFixed(2) }}</span>
             </div>
           </div>
         </div>
         <div class="order-summary">
           <div class="summary-row">
             <span>商品总价：</span>
-            <span>¥{{ orderTotal.toFixed(2) }}</span>
+            <span>￥{{ orderTotal.toFixed(2) }}</span>
           </div>
           <div class="summary-row">
             <span>运费：</span>
-            <span>¥0.00</span>
+            <span>￥0.00</span>
           </div>
           <div class="summary-row total">
             <span>应付总额：</span>
-            <span>¥{{ orderTotal.toFixed(2) }}</span>
+            <span>￥{{ orderTotal.toFixed(2) }}</span>
           </div>
         </div>
         <div class="order-payment">
@@ -280,6 +481,36 @@
     >
       <img :src="anim.image" alt="" />
     </div>
+    
+    <!-- 图片查看器 -->
+    <div class="image-viewer" v-if="showImageViewer" @click.self="closeImageViewer">
+      <button class="close-viewer" @click="closeImageViewer">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+      <button class="prev-image" @click="prevImage" v-if="productImages.length > 1">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+      </button>
+      <button class="next-image" @click="nextImage" v-if="productImages.length > 1">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+        </svg>
+      </button>
+      <div class="viewer-image-container">
+        <img :src="currentGalleryImage" :alt="selectedProduct?.name" />
+      </div>
+      <div class="viewer-indicators" v-if="productImages.length > 1">
+        <span 
+          v-for="(img, i) in productImages" 
+          :key="i"
+          :class="{ active: currentGalleryIndex === i }"
+          @click="currentGalleryIndex = i"
+        ></span>
+      </div>
+    </div>
   </WebsiteLayout>
 </template>
 
@@ -287,7 +518,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import WebsiteLayout from '../components/WebsiteLayout.vue'
-import { getProducts } from '../api/index'
+import { getProducts, getProductReviews, addProductReview } from '../api/index'
 
 // 从后端获取产品数据
 const productsFromBackend = ref([])
@@ -307,48 +538,75 @@ const fetchProducts = async () => {
 // 产品数据（保留本地数据作为后备）
 const allProducts = [
   // 鼠标
-  { id: 1, category: 'mouse', name: '星火RGB电竞鼠标', description: '16000DPI光学传感器，支持RGB灯效', price: 299, originalPrice: 399, image: '/images/mouse/1.jpg', features: ['16000 DPI', 'RGB灯效', '轻量化'] },
-  { id: 2, category: 'mouse', name: '星火无线游戏鼠标', description: '低延迟无线连接，超长续航', price: 399, originalPrice: 499, image: '/images/mouse/2.jpg', features: ['无线连接', '72小时续航', '人体工学'] },
-  { id: 3, category: 'mouse', name: '星火轻量化鼠标', description: '58克超轻设计，FPS神器', price: 349, image: '/images/mouse/3.jpg', features: ['58克', 'PMW3389', '伞绳线'] },
-  { id: 4, category: 'mouse', name: '星火对称游戏鼠标', description: '对称设计，左右手通用', price: 249, originalPrice: 329, image: '/images/mouse/4.jpg', features: ['对称设计', '16000 DPI', '耐用的'] },
-  { id: 5, category: 'mouse', name: '星火有线电竞鼠标', description: '1ms响应时间，职业选手选择', price: 199, image: '/images/mouse/5.jpg', features: ['1ms响应', '欧姆龙微动', '防滑涂层'] },
-  { id: 6, category: 'mouse', name: '星火蓝牙鼠标', description: '支持蓝牙5.0，办公游戏两用', price: 179, image: '/images/mouse/6.jpg', features: ['蓝牙5.0', '多设备切换', '静音'] },
-  { id: 7, category: 'mouse', name: '星火宏定义鼠标', description: '可编程按键，支持宏定义', price: 299, image: '/images/mouse/7.jpg', features: ['可编程', '宏定义', '板载内存'] },
+  { id: 1, category: 'mouse', name: '星火RGB电竞鼠标', description: '16000DPI光学传感器，支持RGB灯效，专为FPS游戏玩家打造', price: 299, originalPrice: 399, image: '/images/mouse/1.jpg', images: ['/images/mouse/1.jpg', '/images/mouse/2.jpg', '/images/mouse/3.jpg'], features: ['16000 DPI', 'RGB灯效', '轻量化'], stock: 150, sales: 328, rating: 4.8, reviewCount: 89 },
+  { id: 2, category: 'mouse', name: '星火无线游戏鼠标', description: '低延迟无线连接，超长续航，告别线缆束缚', price: 399, originalPrice: 499, image: '/images/mouse/2.jpg', images: ['/images/mouse/2.jpg', '/images/mouse/1.jpg'], features: ['无线连接', '72小时续航', '人体工学'], stock: 85, sales: 256, rating: 4.7, reviewCount: 67 },
+  { id: 3, category: 'mouse', name: '星火轻量化鼠标', description: '58克超轻设计，FPS神器，极速响应', price: 349, image: '/images/mouse/3.jpg', images: ['/images/mouse/3.jpg', '/images/mouse/4.jpg'], features: ['58克', 'PMW3389', '伞绳线'], stock: 120, sales: 412, rating: 4.9, reviewCount: 124 },
+  { id: 4, category: 'mouse', name: '星火对称游戏鼠标', description: '对称设计，左右手通用，适合所有玩家', price: 249, originalPrice: 329, image: '/images/mouse/4.jpg', images: ['/images/mouse/4.jpg', '/images/mouse/5.jpg'], features: ['对称设计', '16000 DPI', '耐用的'], stock: 200, sales: 189, rating: 4.5, reviewCount: 45 },
+  { id: 5, category: 'mouse', name: '星火有线电竞鼠标', description: '1ms响应时间，职业选手选择', price: 199, image: '/images/mouse/5.jpg', images: ['/images/mouse/5.jpg'], features: ['1ms响应', '欧姆龙微动', '防滑涂层'], stock: 300, sales: 567, rating: 4.6, reviewCount: 98 },
+  { id: 6, category: 'mouse', name: '星火蓝牙鼠标', description: '支持蓝牙5.0，办公游戏两用', price: 179, image: '/images/mouse/6.jpg', images: ['/images/mouse/6.jpg'], features: ['蓝牙5.0', '多设备切换', '静音'], stock: 180, sales: 234, rating: 4.4, reviewCount: 56 },
+  { id: 7, category: 'mouse', name: '星火宏定义鼠标', description: '可编程按键，支持宏定义', price: 299, image: '/images/mouse/7.jpg', images: ['/images/mouse/7.jpg'], features: ['可编程', '宏定义', '板载内存'], stock: 95, sales: 178, rating: 4.7, reviewCount: 72 },
   // 键盘
-  { id: 8, category: 'keyboard', name: '星火青轴机械键盘', description: '经典青轴，段落感强', price: 399, originalPrice: 499, image: '/images/keyboard/1.jpg', features: ['青轴', 'RGB背光', 'PBT键帽'] },
-  { id: 9, category: 'keyboard', name: '星火红轴机械键盘', description: '线性手感，快速触发', price: 449, originalPrice: 599, image: '/images/keyboard/2.jpg', features: ['红轴', '热插拔', '铝合金'] },
-  { id: 10, category: 'keyboard', name: '星火茶轴机械键盘', description: '轻微段落感，办公游戏兼顾', price: 429, image: '/images/keyboard/3.jpg', features: ['茶轴', '全键无冲', '多媒体'] },
-  { id: 11, category: 'keyboard', name: '星火87键机械键盘', description: '紧凑布局，节省桌面空间', price: 349, originalPrice: 449, image: '/images/keyboard/4.jpg', features: ['87键', '紧凑', 'RGB'] },
-  { id: 12, category: 'keyboard', name: '星火104键机械键盘', description: '全尺寸布局，数字键盘', price: 499, image: '/images/keyboard/5.jpg', features: ['104键', '数字键盘', 'USB-C'] },
-  { id: 13, category: 'keyboard', name: '星火无线机械键盘', description: '三模连接，无线自由', price: 599, originalPrice: 799, image: '/images/keyboard/6.jpg', features: ['无线', '蓝牙/2.4G', '4000mAh'] },
-  { id: 14, category: 'keyboard', name: '星火透明机械键盘', description: '透明外壳，RGB内透', price: 699, image: '/images/keyboard/7.jpg', features: ['透明外壳', '下灯位', '硅胶垫'] },
-  { id: 15, category: 'keyboard', name: '星火游戏键盘', description: '游戏专用，宏按键', price: 549, image: '/images/keyboard/8.jpg', features: ['游戏模式', '宏按键', '掌托'] },
+  { id: 8, category: 'keyboard', name: '星火青轴机械键盘', description: '经典青轴，段落感强，打字声音清脆', price: 399, originalPrice: 499, image: '/images/keyboard/1.jpg', images: ['/images/keyboard/1.jpg', '/images/keyboard/2.jpg'], features: ['青轴', 'RGB背光', 'PBT键帽'], stock: 130, sales: 456, rating: 4.8, reviewCount: 112 },
+  { id: 9, category: 'keyboard', name: '星火红轴机械键盘', description: '线性手感，快速触发，游戏玩家首选', price: 449, originalPrice: 599, image: '/images/keyboard/2.jpg', images: ['/images/keyboard/2.jpg', '/images/keyboard/3.jpg'], features: ['红轴', '热插拔', '铝合金'], stock: 90, sales: 345, rating: 4.9, reviewCount: 87 },
+  { id: 10, category: 'keyboard', name: '星火茶轴机械键盘', description: '轻微段落感，办公游戏兼顾', price: 429, image: '/images/keyboard/3.jpg', images: ['/images/keyboard/3.jpg', '/images/keyboard/4.jpg'], features: ['茶轴', '全键无冲', '多媒体'], stock: 110, sales: 289, rating: 4.6, reviewCount: 68 },
+  { id: 11, category: 'keyboard', name: '星火87键机械键盘', description: '紧凑布局，节省桌面空间', price: 349, originalPrice: 449, image: '/images/keyboard/4.jpg', images: ['/images/keyboard/4.jpg'], features: ['87键', '紧凑', 'RGB'], stock: 160, sales: 398, rating: 4.7, reviewCount: 94 },
+  { id: 12, category: 'keyboard', name: '星火104键机械键盘', description: '全尺寸布局，数字键盘', price: 499, image: '/images/keyboard/5.jpg', images: ['/images/keyboard/5.jpg'], features: ['104键', '数字键盘', 'USB-C'], stock: 85, sales: 267, rating: 4.5, reviewCount: 53 },
+  { id: 13, category: 'keyboard', name: '星火无线机械键盘', description: '三模连接，无线自由', price: 599, originalPrice: 799, image: '/images/keyboard/6.jpg', images: ['/images/keyboard/6.jpg', '/images/keyboard/7.jpg'], features: ['无线', '蓝牙/2.4G', '4000mAh'], stock: 70, sales: 189, rating: 4.8, reviewCount: 76 },
+  { id: 14, category: 'keyboard', name: '星火透明机械键盘', description: '透明外壳，RGB内透', price: 699, image: '/images/keyboard/7.jpg', images: ['/images/keyboard/7.jpg', '/images/keyboard/8.jpg'], features: ['透明外壳', '下灯位', '硅胶垫'], stock: 50, sales: 145, rating: 4.9, reviewCount: 48 },
+  { id: 15, category: 'keyboard', name: '星火游戏键盘', description: '游戏专用，宏按键', price: 549, image: '/images/keyboard/8.jpg', images: ['/images/keyboard/8.jpg'], features: ['游戏模式', '宏按键', '掌托'], stock: 100, sales: 234, rating: 4.6, reviewCount: 61 },
   // 耳机
-  { id: 16, category: 'headset', name: '星火7.1游戏耳机', description: '虚拟7.1环绕声，听声辨位', price: 299, originalPrice: 399, image: '/images/headset/1.jpg', features: ['7.1声道', '降噪麦', 'RGB'] },
-  { id: 17, category: 'headset', name: '星火无线游戏耳机', description: '低延迟无线，震撼低音', price: 499, originalPrice: 699, image: '/images/headset/2.jpg', features: ['无线', '2.4G', '30小时'] },
-  { id: 18, category: 'headset', name: '星火头戴式游戏耳机', description: '50mm大单元，舒适佩戴', price: 249, originalPrice: 349, image: '/images/headset/3.jpg', features: ['50mm单元', '记忆棉', '可调头梁'] },
-  { id: 19, category: 'headset', name: '星火入耳式游戏耳机', description: '小巧便携，手机游戏', price: 149, originalPrice: 199, image: '/images/headset/4.jpg', features: ['入耳式', '麦克风', '线控'] },
-  { id: 20, category: 'headset', name: '星火专业电竞耳机', description: 'ES8.0声卡，职业级', price: 799, image: '/images/headset/5.jpg', features: ['ES8.0', '声卡', 'Hi-Res'] },
-  { id: 21, category: 'headset', name: '星火蓝牙游戏耳机', description: '蓝牙5.0，超低延迟', price: 349, image: '/images/headset/6.jpg', features: ['蓝牙5.0', '游戏模式', '充电盒'] },
-  { id: 22, category: 'headset', name: '星火降噪游戏耳机', description: '主动降噪，沉浸体验', price: 599, image: '/images/headset/7.jpg', features: ['ANC降噪', '通透模式', '触控'] },
-  { id: 23, category: 'headset', name: '星火立体声游戏耳机', description: '立体声效，脚步声增强', price: 199, image: '/images/headset/8.jpg', features: ['立体声', '脚步声增强', '轻量化'] },
+  { id: 16, category: 'headset', name: '星火7.1游戏耳机', description: '虚拟7.1环绕声，听声辨位', price: 299, originalPrice: 399, image: '/images/headset/1.jpg', images: ['/images/headset/1.jpg', '/images/headset/2.jpg'], features: ['7.1声道', '降噪麦', 'RGB'], stock: 140, sales: 512, rating: 4.7, reviewCount: 118 },
+  { id: 17, category: 'headset', name: '星火无线游戏耳机', description: '低延迟无线，震撼低音', price: 499, originalPrice: 699, image: '/images/headset/2.jpg', images: ['/images/headset/2.jpg', '/images/headset/3.jpg'], features: ['无线', '2.4G', '30小时'], stock: 80, sales: 345, rating: 4.8, reviewCount: 89 },
+  { id: 18, category: 'headset', name: '星火头戴式游戏耳机', description: '50mm大单元，舒适佩戴', price: 249, originalPrice: 349, image: '/images/headset/3.jpg', images: ['/images/headset/3.jpg', '/images/headset/4.jpg'], features: ['50mm单元', '记忆棉', '可调头梁'], stock: 170, sales: 456, rating: 4.6, reviewCount: 97 },
+  { id: 19, category: 'headset', name: '星火入耳式游戏耳机', description: '小巧便携，手机游戏', price: 149, originalPrice: 199, image: '/images/headset/4.jpg', images: ['/images/headset/4.jpg'], features: ['入耳式', '麦克风', '线控'], stock: 250, sales: 678, rating: 4.5, reviewCount: 134 },
+  { id: 20, category: 'headset', name: '星火专业电竞耳机', description: 'ES8.0声卡，职业级', price: 799, image: '/images/headset/5.jpg', images: ['/images/headset/5.jpg', '/images/headset/6.jpg'], features: ['ES8.0', '声卡', 'Hi-Res'], stock: 45, sales: 123, rating: 4.9, reviewCount: 67 },
+  { id: 21, category: 'headset', name: '星火蓝牙游戏耳机', description: '蓝牙5.0，超低延迟', price: 349, image: '/images/headset/6.jpg', images: ['/images/headset/6.jpg'], features: ['蓝牙5.0', '游戏模式', '充电盒'], stock: 120, sales: 289, rating: 4.7, reviewCount: 76 },
+  { id: 22, category: 'headset', name: '星火降噪游戏耳机', description: '主动降噪，沉浸体验', price: 599, image: '/images/headset/7.jpg', images: ['/images/headset/7.jpg', '/images/headset/8.jpg'], features: ['ANC降噪', '通透模式', '触控'], stock: 75, sales: 198, rating: 4.8, reviewCount: 58 },
+  { id: 23, category: 'headset', name: '星火立体声游戏耳机', description: '立体声效，脚步声增强', price: 199, image: '/images/headset/8.jpg', images: ['/images/headset/8.jpg'], features: ['立体声', '脚步声增强', '轻量化'], stock: 200, sales: 423, rating: 4.4, reviewCount: 89 },
   // 手柄
-  { id: 24, category: 'controller', name: '星火无线游戏手柄', description: '多平台兼容，震动反馈', price: 299, originalPrice: 399, image: '/images/controller/1.jpg', features: ['无线', '双震动', '多平台'] },
-  { id: 25, category: 'controller', name: '星火有线游戏手柄', description: '0延迟，竞技首选', price: 199, originalPrice: 299, image: '/images/controller/2.jpg', features: ['有线', '0延迟', '线性扳机'] },
-  { id: 26, category: 'controller', name: '星火精英游戏手柄', description: '自定义宏，4背键', price: 499, image: '/images/controller/3.jpg', features: ['4背键', '自定义', '摇杆'] },
-  { id: 27, category: 'controller', name: '星火蓝牙手柄', description: '蓝牙连接，手机也能玩', price: 249, originalPrice: 349, image: '/images/controller/4.jpg', features: ['蓝牙', '安卓/iOS', '体感'] },
-  { id: 28, category: 'controller', name: '星火手柄套装', description: '含底座和耳机，一站式', price: 599, image: '/images/controller/5.jpg', features: ['套装', '充电底座', '耳机'] },
-  { id: 29, category: 'controller', name: '星火复古手柄', description: '经典造型，怀旧体验', price: 179, image: '/images/controller/6.jpg', features: ['复古', 'USB-C', '震动'] },
-  { id: 30, category: 'controller', name: '星火云游戏手柄', description: '专属云游戏优化', price: 349, image: '/images/controller/7.jpg', features: ['云游戏', '低延迟', '映射'] }
+  { id: 24, category: 'controller', name: '星火无线游戏手柄', description: '多平台兼容，震动反馈', price: 299, originalPrice: 399, image: '/images/controller/1.jpg', images: ['/images/controller/1.jpg', '/images/controller/2.jpg'], features: ['无线', '双震动', '多平台'], stock: 130, sales: 389, rating: 4.7, reviewCount: 103 },
+  { id: 25, category: 'controller', name: '星火有线游戏手柄', description: '0延迟，竞技首选', price: 199, originalPrice: 299, image: '/images/controller/2.jpg', images: ['/images/controller/2.jpg', '/images/controller/3.jpg'], features: ['有线', '0延迟', '线性扳机'], stock: 180, sales: 456, rating: 4.6, reviewCount: 87 },
+  { id: 26, category: 'controller', name: '星火精英游戏手柄', description: '自定义宏，4背键', price: 499, image: '/images/controller/3.jpg', images: ['/images/controller/3.jpg', '/images/controller/4.jpg'], features: ['4背键', '自定义', '摇杆'], stock: 65, sales: 167, rating: 4.9, reviewCount: 72 },
+  { id: 27, category: 'controller', name: '星火蓝牙手柄', description: '蓝牙连接，手机也能玩', price: 249, originalPrice: 349, image: '/images/controller/4.jpg', images: ['/images/controller/4.jpg'], features: ['蓝牙', '安卓/iOS', '体感'], stock: 150, sales: 312, rating: 4.5, reviewCount: 68 },
+  { id: 28, category: 'controller', name: '星火手柄套装', description: '含底座和耳机，一站式', price: 599, image: '/images/controller/5.jpg', images: ['/images/controller/5.jpg'], features: ['套装', '充电底座', '耳机'], stock: 55, sales: 134, rating: 4.8, reviewCount: 49 },
+  { id: 29, category: 'controller', name: '星火复古手柄', description: '经典造型，怀旧体验', price: 179, image: '/images/controller/6.jpg', images: ['/images/controller/6.jpg'], features: ['复古', 'USB-C', '震动'], stock: 110, sales: 223, rating: 4.4, reviewCount: 56 },
+  { id: 30, category: 'controller', name: '星火云游戏手柄', description: '专属云游戏优化', price: 349, image: '/images/controller/7.jpg', images: ['/images/controller/7.jpg'], features: ['云游戏', '低延迟', '映射'], stock: 85, sales: 178, rating: 4.7, reviewCount: 64 }
 ]
 
 // 为每个产品添加评价
 allProducts.forEach(product => {
-  product.reviews = [
-    { user: '游戏玩家' + Math.floor(Math.random() * 1000), rating: 5, content: '产品质量很好，推荐购买！', date: '2026-0' + Math.floor(Math.random() * 3 + 1) + '-' + Math.floor(Math.random() * 28 + 1) },
-    { user: '电竞爱好者' + Math.floor(Math.random() * 1000), rating: 4, content: '性价比很高，会推荐给朋友。', date: '2026-0' + Math.floor(Math.random() * 3 + 1) + '-' + Math.floor(Math.random() * 28 + 1) },
-    { user: '资深玩家' + Math.floor(Math.random() * 1000), rating: 5, content: '用了一段时间，感觉非常棒！', date: '2026-0' + Math.floor(Math.random() * 3 + 1) + '-' + Math.floor(Math.random() * 28 + 1) }
-  ]
+  // 确保features是数组
+  if (typeof product.features === 'string') {
+    try {
+      product.features = JSON.parse(product.features)
+    } catch (e) {
+      product.features = [product.features]
+    }
+  }
+  
+  // 确保images是数组
+  if (typeof product.images === 'string') {
+    try {
+      product.images = JSON.parse(product.images)
+    } catch (e) {
+      product.images = [product.images]
+    }
+  }
+  
+  // 确保reviews存在
+  if (!product.reviews || product.reviews.length === 0) {
+    product.reviews = [
+      { user: '游戏玩家' + Math.floor(Math.random() * 1000), rating: 5, content: '产品质量很好，推荐购买！', date: '2026-0' + Math.floor(Math.random() * 3 + 1) + '-' + Math.floor(Math.random() * 28 + 1) },
+      { user: '电竞爱好者' + Math.floor(Math.random() * 1000), rating: 4, content: '性价比很高，会推荐给朋友。', date: '2026-0' + Math.floor(Math.random() * 3 + 1) + '-' + Math.floor(Math.random() * 28 + 1) },
+      { user: '资深玩家' + Math.floor(Math.random() * 1000), rating: 5, content: '用了一段时间，感觉非常棒！', date: '2026-0' + Math.floor(Math.random() * 3 + 1) + '-' + Math.floor(Math.random() * 28 + 1) }
+    ]
+  }
+  
+  // 确保必要字段存在
+  product.stock = product.stock || 0
+  product.sales = product.sales || 0
+  product.rating = product.rating || 4.5
+  product.reviewCount = product.reviewCount || 0
 })
 
 export default {
@@ -368,6 +626,13 @@ export default {
     const cartAnimations = ref([])
     const products = ref([])
     const loading = ref(true)
+    const currentGalleryIndex = ref(0)
+    const activeDetailTab = ref('desc')
+    const showImageViewer = ref(false)
+    const newReview = ref({
+      rating: 0,
+      content: ''
+    })
     
     // 页面加载时获取产品
     onMounted(async () => {
@@ -459,18 +724,103 @@ export default {
       return orderItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
     })
     
+    // 商品图片数组
+    const productImages = computed(() => {
+      if (!selectedProduct.value) return []
+      
+      // 如果images字段存在且是数组
+      if (selectedProduct.value.images && Array.isArray(selectedProduct.value.images) && selectedProduct.value.images.length > 0) {
+        return selectedProduct.value.images
+      }
+      
+      // 如果images字段是字符串，尝试解析
+      if (typeof selectedProduct.value.images === 'string') {
+        try {
+          const parsed = JSON.parse(selectedProduct.value.images)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed
+          }
+        } catch (e) {
+          // 解析失败，忽略
+        }
+      }
+      
+      // 返回主图
+      return [selectedProduct.value.image || '']
+    })
+    
+    // 当前显示的图片
+    const currentGalleryImage = computed(() => {
+      return productImages.value[currentGalleryIndex.value] || ''
+    })
+    
+    // 获取分类名称
+    const getCategoryName = (category) => {
+      const categoryMap = {
+        'mouse': '电竞鼠标',
+        'keyboard': '机械键盘',
+        'headset': '游戏耳机',
+        'controller': '游戏手柄'
+      }
+      return categoryMap[category] || category
+    }
+    
+    // 格式化日期
+    const formatDate = (dateStr) => {
+      if (!dateStr) return ''
+      const date = new Date(dateStr)
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+    }
+    
     // 导航到分类
     const goToCategory = (category) => {
       activeCategory.value = category
     }
     
     // 打开商品详情
-    const openProductDetail = (product) => {
-      selectedProduct.value = product
+    const openProductDetail = async (product) => {
+      // 创建商品副本，避免修改原数据
+      const productCopy = JSON.parse(JSON.stringify(product))
+      
+      // 确保features是数组
+      if (typeof productCopy.features === 'string') {
+        try {
+          productCopy.features = JSON.parse(productCopy.features)
+        } catch (e) {
+          productCopy.features = [productCopy.features]
+        }
+      }
+      
+      // 确保images是数组
+      if (typeof productCopy.images === 'string') {
+        try {
+          productCopy.images = JSON.parse(productCopy.images)
+        } catch (e) {
+          productCopy.images = [productCopy.images]
+        }
+      }
+      
+      // 确保reviews是数组
+      if (!productCopy.reviews || productCopy.reviews.length === 0) {
+        productCopy.reviews = []
+      }
+      
+      selectedProduct.value = productCopy
+      currentGalleryIndex.value = 0
+      activeDetailTab.value = 'desc'
+      
+      // 从后端加载评论
+      await loadProductReviews(productCopy.id)
     }
     
     const closeProductDetail = () => {
       selectedProduct.value = null
+      currentGalleryIndex.value = 0
+      activeDetailTab.value = 'desc'
     }
     
     // 立即购买
@@ -542,6 +892,97 @@ export default {
       showOrderModal.value = false
     }
     
+    // 图片查看器相关方法
+    const openImageViewer = () => {
+      showImageViewer.value = true
+    }
+    
+    const closeImageViewer = () => {
+      showImageViewer.value = false
+    }
+    
+    const prevImage = () => {
+      if (currentGalleryIndex.value > 0) {
+        currentGalleryIndex.value--
+      } else {
+        currentGalleryIndex.value = productImages.value.length - 1
+      }
+    }
+    
+    const nextImage = () => {
+      if (currentGalleryIndex.value < productImages.value.length - 1) {
+        currentGalleryIndex.value++
+      } else {
+        currentGalleryIndex.value = 0
+      }
+    }
+    
+    // 评论相关方法
+    // 从后端加载商品评论
+    const loadProductReviews = async (productId) => {
+      try {
+        const result = await getProductReviews(productId)
+        if (result.success && result.data && result.data.reviews) {
+          // 将后端返回的评论格式转换为前端需要的格式
+          selectedProduct.value.reviews = result.data.reviews.map(review => ({
+            user: review.username,
+            rating: review.rating,
+            content: review.content,
+            date: review.createTime ? formatDate(review.createTime) : review.createTime
+          }))
+          
+          // 更新评论数
+          selectedProduct.value.reviewCount = result.data.reviews.length
+          
+          // 计算平均评分
+          if (result.data.reviews.length > 0) {
+            const totalRating = result.data.reviews.reduce((sum, r) => sum + r.rating, 0)
+            selectedProduct.value.rating = (totalRating / result.data.reviews.length).toFixed(1)
+          }
+        }
+      } catch (error) {
+        console.error('加载商品评论失败:', error)
+      }
+    }
+    
+    // 提交评论
+    const submitReview = async () => {
+      if (!newReview.value.rating || !newReview.value.content.trim()) {
+        alert('请选择评分并填写评价内容')
+        return
+      }
+      
+      // 获取当前登录用户信息
+      const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}')
+      const username = currentUser.username || currentUser.nickname || '匿名用户'
+      
+      // 调用后端API添加评论
+      try {
+        const result = await addProductReview(
+          selectedProduct.value.id,
+          username,
+          newReview.value.rating,
+          newReview.value.content.trim()
+        )
+        
+        if (result.success) {
+          // 重新加载评论列表
+          await loadProductReviews(selectedProduct.value.id)
+          
+          // 重置评论表单
+          newReview.value.rating = 0
+          newReview.value.content = ''
+          
+          alert('评价提交成功！')
+        } else {
+          alert(result.message || '评价提交失败')
+        }
+      } catch (error) {
+        console.error('提交评价失败:', error)
+        alert('评价提交失败，请稍后重试')
+      }
+    }
+    
     onMounted(() => {
       startAdCarousel()
     })
@@ -563,6 +1004,12 @@ export default {
       orderItems,
       orderTotal,
       cartAnimations,
+      currentGalleryIndex,
+      activeDetailTab,
+      productImages,
+      currentGalleryImage,
+      showImageViewer,
+      newReview,
       goToCategory,
       openProductDetail,
       closeProductDetail,
@@ -574,7 +1021,14 @@ export default {
       closeOrderModal,
       processPayment,
       handleIndicatorClick,
-      resetAdCarousel
+      resetAdCarousel,
+      getCategoryName,
+      formatDate,
+      openImageViewer,
+      closeImageViewer,
+      prevImage,
+      nextImage,
+      submitReview
     }
   }
 }
@@ -1092,6 +1546,41 @@ export default {
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
+/* 滚动条样式 */
+.modal-content::-webkit-scrollbar,
+.gallery-thumbs::-webkit-scrollbar,
+.detail-tabs::-webkit-scrollbar,
+.detail-content::-webkit-scrollbar,
+.reviews-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track,
+.gallery-thumbs::-webkit-scrollbar-track,
+.detail-tabs::-webkit-scrollbar-track,
+.detail-content::-webkit-scrollbar-track,
+.reviews-list::-webkit-scrollbar-track {
+  background: #21262d;
+}
+
+.modal-content::-webkit-scrollbar-thumb,
+.gallery-thumbs::-webkit-scrollbar-thumb,
+.detail-tabs::-webkit-scrollbar-thumb,
+.detail-content::-webkit-scrollbar-thumb,
+.reviews-list::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover,
+.gallery-thumbs::-webkit-scrollbar-thumb:hover,
+.detail-tabs::-webkit-scrollbar-thumb:hover,
+.detail-content::-webkit-scrollbar-thumb:hover,
+.reviews-list::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
 /* 商品详情弹窗 */
 .product-modal {
   position: fixed;
@@ -1104,24 +1593,49 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 1001;
-  padding: 40px;
+  padding: 20px;
+  overflow-y: auto;
+  animation: fadeIn 0.3s ease;
 }
 
 .modal-content {
   background: #161b22;
   border-radius: 20px;
-  max-width: 900px;
+  max-width: 1000px;
   width: 100%;
-  max-height: 90vh;
+  max-height: calc(100vh - 40px);
   overflow-y: auto;
   position: relative;
   border: 1px solid #30363d;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .close-modal {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+  position: fixed;
+  top: 30px;
+  right: 30px;
   background: rgba(255, 255, 255, 0.1);
   border: none;
   color: #ffffff;
@@ -1129,8 +1643,11 @@ export default {
   height: 40px;
   border-radius: 50%;
   cursor: pointer;
-  z-index: 10;
+  z-index: 1002;
   transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-modal:hover {
@@ -1146,17 +1663,104 @@ export default {
   display: flex;
   gap: 40px;
   padding: 40px;
-}
-
-.modal-image {
-  width: 350px;
-  height: 350px;
-  border-radius: 16px;
-  overflow: hidden;
   flex-shrink: 0;
 }
 
-.modal-image img {
+/* 商品图片轮播 */
+.modal-gallery {
+  width: 400px;
+  flex-shrink: 0;
+}
+
+.gallery-main {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #21262d;
+  margin-bottom: 16px;
+}
+
+.gallery-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.gallery-main:hover img {
+  transform: scale(1.05);
+}
+
+.discount-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 8px;
+  z-index: 5;
+}
+
+.view-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 5;
+}
+
+.gallery-main:hover .view-hint {
+  opacity: 1;
+}
+
+.view-hint svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gallery-thumbs {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px;
+}
+
+.thumb-item {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.thumb-item:hover {
+  border-color: #667eea;
+}
+
+.thumb-item.active {
+  border-color: #667eea;
+}
+
+.thumb-item img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1164,12 +1768,85 @@ export default {
 
 .modal-info {
   flex: 1;
+  min-width: 0;
+}
+
+/* 商品分类标签 */
+.product-category {
+  margin-bottom: 12px;
+}
+
+.category-tag {
+  padding: 6px 16px;
+  background: rgba(102, 126, 234, 0.2);
+  color: #667eea;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-block;
 }
 
 .modal-info h2 {
   font-size: 28px;
   color: #ffffff;
   margin-bottom: 16px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+/* 评分和销量 */
+.product-stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #30363d;
+  flex-wrap: wrap;
+}
+
+.rating-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rating-box .stars {
+  display: flex;
+  gap: 2px;
+}
+
+.rating-box .stars span {
+  color: #30363d;
+  font-size: 16px;
+  line-height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.rating-box .stars span.filled {
+  color: #ffc107;
+}
+
+.rating-value {
+  color: #ffc107;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.review-count {
+  color: #8b949e;
+  font-size: 14px;
+}
+
+.sales-info {
+  color: #8b949e;
+  font-size: 14px;
 }
 
 .modal-desc {
@@ -1177,13 +1854,16 @@ export default {
   color: #8b949e;
   line-height: 1.6;
   margin-bottom: 20px;
+  word-wrap: break-word;
 }
 
+/* 价格信息 */
 .modal-price {
   display: flex;
   align-items: baseline;
   gap: 16px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .current-price {
@@ -1198,11 +1878,43 @@ export default {
   text-decoration: line-through;
 }
 
+.save-money {
+  padding: 4px 12px;
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 库存信息 */
+.stock-info {
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.stock-label {
+  color: #8b949e;
+}
+
+.stock-info span:last-child {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.stock-info .low-stock {
+  color: #ffc107;
+}
+
+.stock-info .out-of-stock {
+  color: #ff6b6b;
+}
+
 .modal-features {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .feature {
@@ -1211,6 +1923,13 @@ export default {
   border-radius: 20px;
   color: #c9d1d9;
   font-size: 14px;
+}
+
+/* 上架时间 */
+.product-date {
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: #8b949e;
 }
 
 .modal-actions {
@@ -1230,6 +1949,7 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .buy-now-btn {
@@ -1238,9 +1958,15 @@ export default {
   border: none;
 }
 
-.buy-now-btn:hover {
+.buy-now-btn:hover:not(:disabled) {
   transform: scale(1.02);
   box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+}
+
+.buy-now-btn:disabled {
+  background: #30363d;
+  color: #8b949e;
+  cursor: not-allowed;
 }
 
 .add-cart-btn {
@@ -1249,31 +1975,311 @@ export default {
   border: 2px solid #667eea;
 }
 
-.add-cart-btn:hover {
+.add-cart-btn:hover:not(:disabled) {
   background: rgba(102, 126, 234, 0.1);
+}
+
+.add-cart-btn:disabled {
+  border-color: #30363d;
+  color: #8b949e;
+  cursor: not-allowed;
 }
 
 .add-cart-btn svg {
   width: 22px;
   height: 22px;
+  flex-shrink: 0;
 }
 
-/* 买家评价 */
-.modal-reviews {
-  padding: 40px;
+/* 商品详细信息 */
+.modal-details {
+  padding: 0 40px 40px;
   border-top: 1px solid #30363d;
+  flex: 1;
+  min-height: 0;
 }
 
-.modal-reviews h3 {
-  font-size: 22px;
+.detail-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #30363d;
+  margin: 32px 0 24px 0;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.detail-tab {
+  padding: 16px 24px;
+  color: #8b949e;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 15px;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.detail-tab:hover {
   color: #ffffff;
+}
+
+.detail-tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+.detail-content {
+  color: #c9d1d9;
+  line-height: 1.8;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* 商品详情内容 */
+.desc-content h3 {
+  color: #ffffff;
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.desc-content p {
+  margin-bottom: 24px;
+  word-wrap: break-word;
+}
+
+.detail-features h4 {
+  color: #ffffff;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.detail-features ul {
+  list-style: none;
+  padding: 0;
+}
+
+.detail-features li {
+  padding: 8px 0;
+  padding-left: 24px;
+  position: relative;
+  word-wrap: break-word;
+}
+
+.detail-features li::before {
+  content: "?";
+  position: absolute;
+  left: 0;
+  color: #667eea;
+  font-weight: 600;
+}
+
+/* 规格参数表格 */
+.specs-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.spec-row {
+  display: flex;
+  padding: 16px;
+  border-bottom: 1px solid #30363d;
+}
+
+.spec-row:last-child {
+  border-bottom: none;
+}
+
+.spec-label {
+  width: 120px;
+  color: #8b949e;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.spec-value {
+  color: #ffffff;
+  font-size: 14px;
+  flex: 1;
+  word-wrap: break-word;
+}
+
+/* 评价摘要 */
+.reviews-summary {
+  display: flex;
+  justify-content: center;
+  padding: 32px;
+  background: #21262d;
+  border-radius: 12px;
   margin-bottom: 24px;
 }
 
+.summary-rating {
+  text-align: center;
+}
+
+.rating-score {
+  font-size: 48px;
+  font-weight: 700;
+  color: #ffc107;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.rating-stars span {
+  color: #30363d;
+  font-size: 24px;
+  line-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.rating-stars span.filled {
+  color: #ffc107;
+}
+
+.rating-total {
+  color: #8b949e;
+  font-size: 14px;
+}
+
+/* 评论表单 */
+.review-form {
+  background: #21262d;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+.review-form h4 {
+  color: #ffffff;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.rating-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rating-input > span:first-child {
+  color: #c9d1d9;
+  font-size: 14px;
+}
+
+.star-rating-input {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.star-rating-input span {
+  color: #30363d;
+  font-size: 28px !important;
+  line-height: 28px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.star-rating-input span:hover {
+  transform: scale(1.2);
+}
+
+.star-rating-input span.filled {
+  color: #ffc107;
+}
+
+.review-textarea {
+  width: 100%;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px;
+  color: #c9d1d9;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+
+.review-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.review-textarea::placeholder {
+  color: #8b949e;
+}
+
+.review-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.char-count {
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.submit-review-btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.submit-review-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.submit-review-btn:disabled {
+  background: #30363d;
+  color: #8b949e;
+  cursor: not-allowed;
+}
+
+/* 评论列表 */
 .reviews-list {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 10px;
 }
 
 .review-item {
@@ -1287,6 +2293,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .review-user {
@@ -1302,6 +2310,15 @@ export default {
 .review-stars span {
   color: #30363d;
   font-size: 16px;
+  line-height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .review-stars span.filled {
@@ -1312,6 +2329,7 @@ export default {
   color: #c9d1d9;
   line-height: 1.6;
   margin-bottom: 8px;
+  word-wrap: break-word;
 }
 
 .review-date {
@@ -1502,13 +2520,4 @@ export default {
   }
 }
 
-/* 响应式 */
-@media (max-width: 1024px) {
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 30px;
-    padding: 0 40px 40px;
-  }
-}
 </style>
-

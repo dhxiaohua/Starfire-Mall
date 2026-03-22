@@ -13,22 +13,21 @@ export function useWebSocket(username) {
     socket.value = new WebSocket(wsUrl)
     
     socket.value.onopen = () => {
-      console.log('WebSocket连接已建立')
       connected.value = true
     }
-    
+
     socket.value.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
         messages.value.push(data)
-        
+
         // 触发自定义事件通知
         window.dispatchEvent(new CustomEvent('websocket-notification', { detail: data }))
-        
+
         // 对于重要通知，显示浏览器通知
         if (data.type === 'new_admin_request' || data.type === 'request_approved' || data.type === 'request_rejected') {
           notifications.value.push(data)
-          
+
           // 显示浏览器通知
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('星火商城通知', {
@@ -41,11 +40,10 @@ export function useWebSocket(username) {
         console.error('解析WebSocket消息失败:', e)
       }
     }
-    
+
     socket.value.onclose = () => {
-      console.log('WebSocket连接已关闭')
       connected.value = false
-      
+
       // 5秒后自动重连
       setTimeout(() => {
         if (username) {
@@ -53,7 +51,7 @@ export function useWebSocket(username) {
         }
       }, 5000)
     }
-    
+
     socket.value.onerror = (error) => {
       console.error('WebSocket错误:', error)
     }

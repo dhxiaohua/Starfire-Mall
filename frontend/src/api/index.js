@@ -464,10 +464,8 @@ export const sendCustomerMessage = async (data) => {
 // 获取所有客服消息（管理员用）
 export const getAllCustomerMessages = async () => {
   try {
-    console.log('请求客服消息列表，URL:', `${API_BASE_URL}/customer/all-messages`)
     const response = await fetch(`${API_BASE_URL}/customer/all-messages`)
     const data = await response.json()
-    console.log('客服消息响应:', data)
     return data
   } catch (error) {
     console.error('获取所有客服消息失败:', error)
@@ -552,6 +550,34 @@ export const updateOrderStatus = async (id, status) => {
     return await response.json();
   } catch (error) {
     console.error('更新订单状态失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+};
+
+// ===== 商品评论 API =====
+
+// 获取商品评论列表
+export const getProductReviews = async (productId, page = 1, size = 100) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/reviews/product/${productId}?page=${page}&size=${size}`);
+    return await response.json();
+  } catch (error) {
+    console.error('获取商品评论失败:', error);
+    return { success: false, message: '服务器错误', reviews: [] };
+  }
+};
+
+// 添加商品评论
+export const addProductReview = async (productId, username, rating, content) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/reviews/add`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ productId, username, rating, content }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('添加商品评论失败:', error);
     return { success: false, message: '服务器错误' };
   }
 };

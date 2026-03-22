@@ -191,11 +191,12 @@ public class ProductService {
         catWrapper.select("category_id, SUM(sales) as sales, COUNT(*) as count");
         catWrapper.eq("status", 1);
         catWrapper.groupBy("category_id");
-        List<Product> categories = productMapper.selectList(catWrapper);
-        for (Product p : categories) {
+        List<Map<String, Object>> categoryResults = productMapper.selectMaps(catWrapper);
+        for (Map<String, Object> result : categoryResults) {
             Map<String, Object> cat = new HashMap<>();
-            cat.put("categoryId", p.getCategoryId());
-            cat.put("sales", p.getSales());
+            cat.put("categoryId", result.get("category_id"));
+            cat.put("sales", result.get("sales"));
+            cat.put("count", result.get("count"));
             categoryStats.add(cat);
         }
         stats.put("categoryStats", categoryStats);

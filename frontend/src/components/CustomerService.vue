@@ -90,8 +90,7 @@ export default {
       if (result.success) {
         const messageData = result.data || result
         const rawMessages = messageData.messages || messageData.records || []
-        console.log('原始消息数据:', rawMessages)
-        
+
         // 获取当前用户信息以获取头像
         let currentUserAvatar = userStore.value.avatar || ''
         try {
@@ -210,9 +209,9 @@ export default {
 <style scoped>
 .customer-service-wrapper {
   position: fixed;
-  bottom: 30px;
-  left: 30px;
-  z-index: 99999;
+  bottom: 100px;
+  right: 30px;
+  z-index: 1000;
 }
 
 .service-toggle-btn {
@@ -247,8 +246,8 @@ export default {
 /* 聊天面板 */
 .chat-panel {
   position: absolute;
-  bottom: 60px;
-  left: 0;
+  bottom: 70px;
+  right: 0;
   width: 380px;
   height: 500px;
   background: #1a1a2e;

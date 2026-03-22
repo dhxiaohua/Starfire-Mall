@@ -391,13 +391,13 @@ public class UserService {
     public long getTotalUsers() {
         // 尝试从缓存获取
         String key = "user:count:total";
-        Long count = redisCacheService.get(key);
-        if (count != null) {
-            return count;
+        Object cached = redisCacheService.get(key);
+        if (cached != null) {
+            return cached instanceof Integer ? ((Integer) cached).longValue() : (Long) cached;
         }
         
         // 缓存未命中，从数据库查询
-        count = userMapper.selectCount(new QueryWrapper<>());
+        Long count = userMapper.selectCount(new QueryWrapper<>());
         
         // 存入缓存
         redisCacheService.set(key, count, 3600);
@@ -408,13 +408,13 @@ public class UserService {
     public long getAdminUsers() {
         // 尝试从缓存获取
         String key = "user:count:admin";
-        Long count = redisCacheService.get(key);
-        if (count != null) {
-            return count;
+        Object cached = redisCacheService.get(key);
+        if (cached != null) {
+            return cached instanceof Integer ? ((Integer) cached).longValue() : (Long) cached;
         }
         
         // 缓存未命中，从数据库查询
-        count = userMapper.selectCount(new QueryWrapper<User>().eq("role", "admin"));
+        Long count = userMapper.selectCount(new QueryWrapper<User>().eq("role", "admin"));
         
         // 存入缓存
         redisCacheService.set(key, count, 3600);
@@ -425,13 +425,13 @@ public class UserService {
     public long getPendingRequestsCount() {
         // 尝试从缓存获取
         String key = "user:count:pending";
-        Long count = redisCacheService.get(key);
-        if (count != null) {
-            return count;
+        Object cached = redisCacheService.get(key);
+        if (cached != null) {
+            return cached instanceof Integer ? ((Integer) cached).longValue() : (Long) cached;
         }
         
         // 缓存未命中，从数据库查询
-        count = userMapper.selectCount(new QueryWrapper<User>().eq("admin_status", "pending"));
+        Long count = userMapper.selectCount(new QueryWrapper<User>().eq("admin_status", "pending"));
         
         // 存入缓存
         redisCacheService.set(key, count, 3600);
@@ -442,13 +442,13 @@ public class UserService {
     public long getActiveUsers() {
         // 尝试从缓存获取
         String key = "user:count:active";
-        Long count = redisCacheService.get(key);
-        if (count != null) {
-            return count;
+        Object cached = redisCacheService.get(key);
+        if (cached != null) {
+            return cached instanceof Integer ? ((Integer) cached).longValue() : (Long) cached;
         }
         
         // 缓存未命中，从数据库查询
-        count = userMapper.selectCount(new QueryWrapper<User>().eq("status", 1));
+        Long count = userMapper.selectCount(new QueryWrapper<User>().eq("status", 1));
         
         // 存入缓存
         redisCacheService.set(key, count, 3600);

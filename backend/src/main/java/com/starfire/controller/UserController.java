@@ -36,16 +36,23 @@ public class UserController {
     @PutMapping("/update")
     public ApiResponse<String> updateUserInfo(@RequestBody Map<String, String> request) {
         String username = request.get("username");
-        
+
+        System.out.println("更新用户信息 - 接收到请求参数: " + request);
+
         if (username == null || username.isEmpty()) {
+            System.out.println("更新用户信息失败: 用户名为空");
             return ApiResponse.error("用户名不能为空");
         }
-        
+
+        System.out.println("正在查找用户: " + username);
         User user = userService.findByUsername(username);
         if (user == null) {
+            System.out.println("更新用户信息失败: 用户不存在 - " + username);
             return ApiResponse.error("用户不存在");
         }
-        
+
+        System.out.println("找到用户，准备更新: ID=" + user.getId() + ", Username=" + user.getUsername());
+
         if (request.containsKey("nickname")) {
             user.setNickname(request.get("nickname"));
         }
@@ -58,12 +65,14 @@ public class UserController {
         if (request.containsKey("avatar")) {
             user.setAvatar(request.get("avatar"));
         }
-        
+
         boolean success = userService.updateUserInfo(user);
-        
+
         if (success) {
+            System.out.println("用户信息更新成功: " + username);
             return ApiResponse.success("更新成功", null);
         } else {
+            System.out.println("用户信息更新失败: " + username);
             return ApiResponse.error("更新失败");
         }
     }

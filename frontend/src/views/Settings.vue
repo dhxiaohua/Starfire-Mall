@@ -439,7 +439,7 @@ export default {
           userStore.value.nickname = userData.nickname || ''
           userStore.value.avatar = userData.avatar || ''
           userStore.value.isAdmin = userData.role === 'admin'
-          userStore.value.adminStatus = userData.admin_status || 'none'
+          userStore.value.adminStatus = userData.adminStatus || 'none'
           
           editForm.nickname = userData.nickname || ''
           editForm.email = userData.email || ''
@@ -471,6 +471,16 @@ export default {
     }
 
     const saveProfile = async () => {
+      console.log('保存个人资料 - 当前用户名:', userStore.value.username)
+      console.log('保存个人资料 - 编辑表单:', editForm)
+
+      if (!userStore.value.username) {
+        console.error('保存个人资料失败: 用户名为空')
+        alert('用户信息异常，请重新登录')
+        router.push('/')
+        return
+      }
+
       const result = await updateUserInfo(
         userStore.value.username,
         editForm.nickname,
@@ -478,7 +488,9 @@ export default {
         editForm.phone,
         editForm.avatar
       )
-      
+
+      console.log('保存个人资料 - 服务器响应:', result)
+
       if (result.success) {
         userStore.value.nickname = editForm.nickname
         userStore.value.avatar = editForm.avatar
@@ -492,6 +504,7 @@ export default {
         userInfo.value.avatar = editForm.avatar
         alert('信息保存成功！')
       } else {
+        console.error('保存个人资料失败:', result)
         alert(result.message || '保存失败')
       }
     }

@@ -5,9 +5,18 @@ spring:
   application:
     name: starfire-mall
 
+  # HTTP 编码配置
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      force-request: true
+      force-response: true
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/starfire_mall?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://127.0.0.1:3306/starfire_mall?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
     password: your_password
     hikari:
@@ -45,7 +54,7 @@ spring:
 # 文件上传配置
 file:
   upload:
-    path: /Starfire-Mall/frontend/public/images/avatars
+    path: Starfire-Mall/frontend/public/images/avatars
 
 mybatis-plus:
   configuration:

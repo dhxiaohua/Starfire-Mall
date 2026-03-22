@@ -1,34 +1,37 @@
-﻿<template>
+<template>
   <WebsiteLayout current-page="home">
     <!-- 未登录：显示星空背景欢迎页面页面 -->
     <template v-if="!userStore.isLoggedIn">
-      <!-- 粒子星空背景 -->
-      <div class="star-background">
-        <canvas ref="canvas" class="star-canvas"></canvas>
-      </div>
-      
-      <!-- 欢迎页面区域 -->
-      <section class="hero">
+      <!-- 星空欢迎区域 -->
+      <section class="hero-story">
+        <!-- 星空背景 -->
+        <div class="star-background">
+          <canvas ref="canvas" class="star-canvas"></canvas>
+        </div>
+
+        <!-- 欢迎内容 -->
         <div class="hero-content">
-          <h1 class="hero-title">欢迎来到星火设备</h1>
-          <p class="hero-subtitle">专业游戏设备一站式购买物平台，为玩家带来极致游戏体验</p>
-          
-          <div class="hero-search">
-            <div class="search-box">
-              <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+          <!-- 左侧标题组 -->
+          <div class="title-group-left">
+            <h1 class="title-en-large">STARFIRE MALL</h1>
+            <h2 class="title-zh-large">星火设备，为游戏而生</h2>
+          </div>
+
+          <!-- 右侧内容区 -->
+          <div class="content-group-right">
+            <p class="desc-text-small">星火设备，专业的电竞装备<br>极致的游戏体验,助力每一位玩家走向胜利!</p>
+            <button class="about-btn" @click="$router.push('/about')">
+              了解我们
+              <svg class="arrow-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
               </svg>
-              <input 
-                type="text" 
-                v-model="searchText" 
-                placeholder="搜索游戏设备..." 
-                class="search-input"
-              />
-              <button class="search-btn">搜索</button>
-            </div>
+            </button>
           </div>
         </div>
       </section>
+
+      <!-- 占位元素，用于将产品展示区域推到页面底部 -->
+      <div class="hero-story-placeholder"></div>
 
       <!-- 为什么选择我们 -->
       <section class="features" ref="featuresSection">
@@ -119,7 +122,7 @@
             <div class="footer-links">
               <div class="link-group">
                 <h4>联系我们</h4>
-                <p>客服热线：?00-888-8888</p>
+                <p>客服热线：400-888-8888</p>
                 <p>邮箱：support@xinghuo.com</p>
                 <p>地址：上海市浦东新区游戏路88号</p>
               </div>
@@ -128,7 +131,7 @@
                 <div class="social-icons">
                   <span class="social-icon">📱</span>
                   <span class="social-icon">💬</span>
-                  <span class="social-icon">📧</span>
+                  <span class="social-icon">📺</span>
                 </div>
               </div>
             </div>
@@ -149,22 +152,26 @@
           <div class="map-container" ref="container">
             <canvas ref="mapCanvas" @click="handleWaveClick" @mousemove="handleMouseMove" @mouseleave="handleMouseLeave"></canvas>
           </div>
-          
-          <!-- 左下角标题组 -->
-          <div class="title-group">
-            <h1 class="title-en">STARFIRE MALL</h1>
-            <h2 class="title-zh">星火设备，为游戏而生</h2>
-          </div>
-          
-          <!-- 右侧内容区 -->
-          <div class="content-right">
-            <p class="desc-text">专业的电竞装备<br>极致的游戏体验,助力每一位玩家走向胜利!</p>
-            <button class="about-btn" @click="$router.push('/about')">
-              了解我们
-              <svg class="arrow-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
-            </button>
+
+          <!-- 欢迎语、介绍和搜索框 -->
+          <div class="content-center">
+            <h1 class="welcome-title">欢迎来到星火设备</h1>
+            <p class="welcome-subtitle">专业游戏设备一站式购买物平台，为玩家带来极致游戏体验</p>
+
+            <div class="welcome-search">
+              <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                </svg>
+                <input
+                  type="text"
+                  v-model="searchText"
+                  placeholder="搜索游戏设备..."
+                  class="search-input"
+                />
+                <button class="search-btn" @click="handleSearch">搜索</button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -281,6 +288,13 @@ export default {
     let mapAnimationId = null
     let lastScrollY = 0
 
+    // 星空背景鼠标位置
+    let starMouseX = -1000
+    let starMouseY = -1000
+
+    // 星空背景旋转角度
+    let rotationAngle = 0
+
     // 产品宣传数据
     const mouseProducts = [
       { name: '星火商城RGB电竞鼠标', image: '/images/mouse/1.jpg', feature: '16000DPI | RGB炫彩' },
@@ -381,16 +395,23 @@ export default {
       selectedProductLogged.value = null
     }
 
-    // 跳转到产品分类页面?    
+    // 跳转到产品分类页面?
     const goToCategory = (category) => {
       router.push({ path: '/products', query: { category } })
     }
 
+    // 搜索功能
+    const handleSearch = () => {
+      if (searchText.value.trim()) {
+        router.push({ path: '/search', query: { keyword: searchText.value.trim() } })
+      }
+    }
+
     const features = [
-      { icon: '🎯', title: '正品保证障', desc: '官方授权，正品保证' },
+      { icon: '🛡️', title: '正品保证', desc: '官方授权，正品保证' },
       { icon: '🚚', title: '极速发货', desc: '48小时内快速发货' },
-      { icon: '🛡️', title: '品质保证证', desc: '一年质保证,只换不修' },
-      { icon: '💬', title: '专业客服', desc: '7x24小时在线服务' },
+      { icon: '⭐', title: '品质保证', desc: '一年质保证,只换不修' },
+      { icon: '🎧', title: '专业客服', desc: '7x24小时在线服务' },
       { icon: '💰', title: '价格优惠', desc: '官方授权，价格最优'},
       { icon: '🔄', title: '退换无忧', desc: '7天无理由退换货' }
     ]
@@ -440,16 +461,26 @@ export default {
       
       cvs.width = window.innerWidth
       cvs.height = window.innerHeight
-      
+
+      // 计算画布对角线的一半（最大旋转半径）
+      const diagonal = Math.sqrt(cvs.width * cvs.width + cvs.height * cvs.height)
+      const maxRadius = diagonal / 2
+
       // 增加星星数量，密度更大
-      const particleCount = Math.floor((cvs.width * cvs.height) / 2500)
+      const particleCount = Math.floor((cvs.width * cvs.height) / 2000)
       particles = []
-      
-      // 创建普通星星
+
+      // 创建普通星星（在更大的圆形区域内生成）
       for (let i = 0; i < particleCount; i++) {
+        // 在圆形区域内随机生成位置
+        const angle = Math.random() * Math.PI * 2
+        const radius = Math.sqrt(Math.random()) * maxRadius
+        const centerX = cvs.width / 2
+        const centerY = cvs.height / 2
+
         particles.push({
-          x: Math.random() * cvs.width,
-          y: Math.random() * cvs.height, // 星星分布在整个容器
+          x: centerX + Math.cos(angle) * radius,
+          y: centerY + Math.sin(angle) * radius,
           radius: Math.random() * 1.8 + 0.8, // 更大的星星
           alpha: Math.random() * 0.7 + 0.3, // 更亮的星星
           baseAlpha: Math.random() * 0.7 + 0.3, // 基础亮度
@@ -461,8 +492,8 @@ export default {
       
       // 创建北极星（位置固定，稍大一点，常亮，淡黄色）
       particles.push({
-        x: cvs.width * 0.7,
-        y: cvs.height * 0.15,
+        x: cvs.width * 0.5,
+        y: cvs.height * 0.5,
         radius: 3.5,
         alpha: 1,
         baseAlpha: 1,
@@ -486,8 +517,8 @@ export default {
       
       bigDipper.forEach((star, index) => {
         particles.push({
-          x: cvs.width * (0.10 + star.x),
-          y: cvs.height * (0.70 + star.y),
+          x: cvs.width * (0.29+ star.x * 0.3),
+          y: cvs.height * (0.79+ star.y * 0.3),
           radius: 3,
           alpha: 1,
           baseAlpha: 1,
@@ -517,110 +548,184 @@ export default {
       ctx.fillRect(0, 0, cvs.width, cvs.height)
       
       // 绘制星星
+      let activatedStarsCount = 0
+
+      // 更新旋转角度（每帧旋转0.05度）
+      rotationAngle += 0.0005
+
       particles.forEach(p => {
+        let currentAlpha = p.alpha
+        let currentRadius = p.radius
+
+        // 计算旋转后的位置（围绕容器中心）
+        const centerX = cvs.width / 2
+        const centerY = cvs.height / 2
+        const dx = p.x - centerX
+        const dy = p.y - centerY
+        const rotatedX = dx * Math.cos(rotationAngle) - dy * Math.sin(rotationAngle) + centerX
+        const rotatedY = dx * Math.sin(rotationAngle) + dy * Math.cos(rotationAngle) + centerY
+
         // 星星闪烁，但北极星和北斗七星常亮
         if (p.type === 'star') {
           const time = Date.now() * 0.001
-          p.alpha = p.baseAlpha + Math.sin(time * p.twinkleSpeed * 100 + p.twinkleOffset) * 0.4
-          p.alpha = Math.max(0.1, Math.min(1, p.alpha))
+          currentAlpha = p.baseAlpha + Math.sin(time * p.twinkleSpeed * 100 + p.twinkleOffset) * 0.4
+          currentAlpha = Math.max(0.1, Math.min(1, currentAlpha))
+
+          // 鼠标交互：鼠标附近的星星变亮
+          if (starMouseX > -500) {
+            const dx = rotatedX - starMouseX
+            const dy = rotatedY - starMouseY
+            const distance = Math.sqrt(dx * dx + dy * dy)
+
+            // 距离鼠标 150 像素范围内的星星会被激活
+            if (distance < 150) {
+              const activationLevel = (150 - distance) / 150
+              currentAlpha = Math.min(currentAlpha + activationLevel * 0.5, 1)
+              currentRadius = p.radius * (1 + activationLevel * 0.4) // 稍微增大
+              activatedStarsCount++
+            }
+          }
         }
-        
+
         ctx.beginPath()
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
-        
+        ctx.arc(rotatedX, rotatedY, currentRadius, 0, Math.PI * 2)
+
         if (p.type === 'pole-star') {
           // 北极星渲染（常亮，淡黄色）
           ctx.fillStyle = `rgba(255, 255, 180, ${p.alpha})`
           ctx.fill()
-          
+
           // 北极星多层光晕
           // 内层光晕
           ctx.beginPath()
-          ctx.arc(p.x, p.y, p.radius * 2.5, 0, Math.PI * 2)
-          const innerGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2.5)
+          ctx.arc(rotatedX, rotatedY, p.radius * 2.5, 0, Math.PI * 2)
+          const innerGlow = ctx.createRadialGradient(rotatedX, rotatedY, 0, rotatedX, rotatedY, p.radius * 2.5)
           innerGlow.addColorStop(0, `rgba(255, 255, 180, ${p.alpha * 0.5})`)
           innerGlow.addColorStop(1, 'transparent')
           ctx.fillStyle = innerGlow
           ctx.fill()
-          
+
           // 外层光晕
           ctx.beginPath()
-          ctx.arc(p.x, p.y, p.radius * 4, 0, Math.PI * 2)
-          const outerGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 4)
+          ctx.arc(rotatedX, rotatedY, p.radius * 4, 0, Math.PI * 2)
+          const outerGlow = ctx.createRadialGradient(rotatedX, rotatedY, 0, rotatedX, rotatedY, p.radius * 4)
           outerGlow.addColorStop(0, `rgba(255, 255, 150, ${p.alpha * 0.3})`)
           outerGlow.addColorStop(1, 'transparent')
           ctx.fillStyle = outerGlow
           ctx.fill()
-          
+
           // 十字光芒
           ctx.strokeStyle = `rgba(255, 255, 180, ${p.alpha * 0.6})`
           ctx.lineWidth = 1.5
           ctx.beginPath()
-          ctx.moveTo(p.x - p.radius * 2, p.y)
-          ctx.lineTo(p.x + p.radius * 2, p.y)
-          ctx.moveTo(p.x, p.y - p.radius * 2)
-          ctx.lineTo(p.x, p.y + p.radius * 2)
+          ctx.moveTo(rotatedX - p.radius * 2, rotatedY)
+          ctx.lineTo(rotatedX + p.radius * 2, rotatedY)
+          ctx.moveTo(rotatedX, rotatedY - p.radius * 2)
+          ctx.lineTo(rotatedX, rotatedY + p.radius * 2)
           ctx.stroke()
         } else if (p.type === 'dipper') {
           // 北斗七星渲染（常亮，淡蓝色，与北极星相同样式）
           ctx.fillStyle = `rgba(200, 230, 255, ${p.alpha})`
           ctx.fill()
-          
+
           // 星星多层光晕
           // 内层光晕
           ctx.beginPath()
-          ctx.arc(p.x, p.y, p.radius * 2.5, 0, Math.PI * 2)
-          const innerGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2.5)
+          ctx.arc(rotatedX, rotatedY, p.radius * 2.5, 0, Math.PI * 2)
+          const innerGlow = ctx.createRadialGradient(rotatedX, rotatedY, 0, rotatedX, rotatedY, p.radius * 2.5)
           innerGlow.addColorStop(0, `rgba(200, 230, 255, ${p.alpha * 0.5})`)
           innerGlow.addColorStop(1, 'transparent')
           ctx.fillStyle = innerGlow
           ctx.fill()
-          
+
           // 外层光晕
           ctx.beginPath()
-          ctx.arc(p.x, p.y, p.radius * 4, 0, Math.PI * 2)
-          const outerGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 4)
+          ctx.arc(rotatedX, rotatedY, p.radius * 4, 0, Math.PI * 2)
+          const outerGlow = ctx.createRadialGradient(rotatedX, rotatedY, 0, rotatedX, rotatedY, p.radius * 4)
           outerGlow.addColorStop(0, `rgba(180, 220, 255, ${p.alpha * 0.3})`)
           outerGlow.addColorStop(1, 'transparent')
           ctx.fillStyle = outerGlow
           ctx.fill()
-          
+
           // 十字光芒
           ctx.strokeStyle = `rgba(200, 230, 255, ${p.alpha * 0.6})`
           ctx.lineWidth = 1.5
           ctx.beginPath()
-          ctx.moveTo(p.x - p.radius * 2, p.y)
-          ctx.lineTo(p.x + p.radius * 2, p.y)
-          ctx.moveTo(p.x, p.y - p.radius * 2)
-          ctx.lineTo(p.x, p.y + p.radius * 2)
+          ctx.moveTo(rotatedX - p.radius * 2, rotatedY)
+          ctx.lineTo(rotatedX + p.radius * 2, rotatedY)
+          ctx.moveTo(rotatedX, rotatedY - p.radius * 2)
+          ctx.lineTo(rotatedX, rotatedY + p.radius * 2)
           ctx.stroke()
         } else {
           // 普通星星渲染
-          ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`
+          ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha})`
           ctx.fill()
-          
+
           // 较大星星的小光晕
-          if (p.radius > 1.5) {
+          let hasGlow = currentRadius > 1.5
+          let nearMouse = false
+
+          // 鼠标交互：鼠标附近的星星有更强的光晕
+          if (starMouseX > -500 && p.type === 'star') {
+            const dx = rotatedX - starMouseX
+            const dy = rotatedY - starMouseY
+            const distance = Math.sqrt(dx * dx + dy * dy)
+
+            if (distance < 150) {
+              nearMouse = true
+              const activationLevel = (150 - distance) / 150
+
+              // 绘制增强的光晕
+              ctx.beginPath()
+              ctx.arc(rotatedX, rotatedY, currentRadius * (2.5 + activationLevel * 2), 0, Math.PI * 2)
+              const glowGradient = ctx.createRadialGradient(rotatedX, rotatedY, 0, rotatedX, rotatedY, currentRadius * (2.5 + activationLevel * 2))
+              glowGradient.addColorStop(0, `rgba(200, 220, 255, ${currentAlpha * (0.3 + activationLevel * 0.5)})`)
+              glowGradient.addColorStop(1, 'transparent')
+              ctx.fillStyle = glowGradient
+              ctx.fill()
+            }
+          }
+
+          // 绘制普通光晕（如果没有鼠标交互）
+          if (hasGlow && !nearMouse) {
             ctx.beginPath()
-            ctx.arc(p.x, p.y, p.radius * 2, 0, Math.PI * 2)
-            const glowGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2)
-            glowGradient.addColorStop(0, `rgba(200, 220, 255, ${p.alpha * 0.3})`)
+            ctx.arc(rotatedX, rotatedY, currentRadius * 2, 0, Math.PI * 2)
+            const glowGradient = ctx.createRadialGradient(rotatedX, rotatedY, 0, rotatedX, rotatedY, currentRadius * 2)
+            glowGradient.addColorStop(0, `rgba(200, 220, 255, ${currentAlpha * 0.3})`)
             glowGradient.addColorStop(1, 'transparent')
             ctx.fillStyle = glowGradient
             ctx.fill()
           }
         }
       })
-      
+
       animationId = requestAnimationFrame(animate)
     }
 
+    // 星空背景鼠标处理
+    const handleStarMouseMove = (e) => {
+      // 只有在未登录状态才处理鼠标事件
+      if (userStore.value.isLoggedIn) return
+
+      const cvs = canvas.value
+      if (!cvs) return
+
+      const rect = cvs.getBoundingClientRect()
+      starMouseX = e.clientX - rect.left
+      starMouseY = e.clientY - rect.top
+    }
+
+    const handleStarMouseLeave = () => {
+      // 只有在未登录状态才处理鼠标事件
+      if (userStore.value.isLoggedIn) return
+
+      starMouseX = -1000
+      starMouseY = -1000
+    }
+
     const handleResize = () => {
-      if (userStore.value.isLoggedIn) {
-        initWaveCanvas()
-      } else {
-        initParticles()
-      }
+      // 窗口大小改变时重新初始化背景效果
+      initBackgroundEffect()
     }
 
     // 像素粒子相关
@@ -629,56 +734,46 @@ export default {
     let waveAnimationId = null
     let mouseX = -1000
     let mouseY = -1000
+    let lastMouseX = -1000
+    let lastMouseY = -1000
+    let mouseSpeed = 0
+    let mouseTrailParticles = []
+    let lastTrailTime = 0
 
     // 初始化像素粒子
-
         const initWaveParticles = () => {
-
           waveParticles = []
 
           const canvasEl = mapCanvas.value
-
           const containerEl = container.value
 
-          
-
           if (!canvasEl || !containerEl) {
-
             console.log('Canvas 或 container 未找到')
-
             return
-
           }
 
-    
-
-          const { width, height } = containerEl.getBoundingClientRect()
+          // 使用 window 确保获取正确的高度，避免容器未完全渲染导致高度不准确
+          const width = window.innerWidth
+          const height = window.innerHeight
 
           canvasEl.width = width
-
           canvasEl.height = height
-
-          
 
           waveCtx = canvasEl.getContext('2d')
 
-    
+          // 整个容器底部都是起火点 - 减少密度
+          const pixelSize = 4 // 增大像素大小减少密度
+          const bottomHeight = 30 // 底部起火高度
 
-          // 整个容器底部都是起火点 - 增加密度
 
-          const pixelSize = 3 // 减小像素大小增加密度
 
-          const bottomHeight = 30 // 增加底部起火高度
-
-    
-
-          // 创建像素火焰粒子 - 每个位置创建更多层
+          // 创建像素火焰粒子 - 每个位置创建3层火焰
 
           for (let x = 0; x < width; x += pixelSize) {
 
-            // 每个像素位置创建5层火焰（原来3层），增加密度
+            // 每个像素位置创建3层火焰
 
-            for (let layer = 0; layer < 5; layer++) {
+            for (let layer = 0; layer < 3; layer++) {
 
               const pixel = {
 
@@ -728,11 +823,11 @@ export default {
 
           }
 
-          
 
-          // 添加额外的火星粒子 - 增加数量
 
-          const emberCount = Math.floor(width / 4) // 增加火星数量
+          // 添加额外的火星粒子 - 减少数量
+
+          const emberCount = Math.floor(width / 6) // 减少火星数量
 
           for (let i = 0; i < emberCount; i++) {
 
@@ -776,9 +871,9 @@ export default {
 
           
 
-          // 背景飘浮的余烬 - 增加数量
+          // 背景飘浮的余烬 - 减少数量
 
-          const floatingEmbers = 250
+          const floatingEmbers = 150
 
           for (let i = 0; i < floatingEmbers; i++) {
 
@@ -816,21 +911,63 @@ export default {
 
           }
 
-          
+
 
           console.log('创建了', waveParticles.length, '个像素火焰粒子')
 
         }    // 鼠标移动处理
     const handleMouseMove = (e) => {
+      if (!mapCanvas.value) return
+
       const rect = mapCanvas.value.getBoundingClientRect()
+      lastMouseX = mouseX
+      lastMouseY = mouseY
       mouseX = e.clientX - rect.left
       mouseY = e.clientY - rect.top
+
+      // 计算鼠标速度
+      if (lastMouseX > -500) {
+        const dx = mouseX - lastMouseX
+        const dy = mouseY - lastMouseY
+        mouseSpeed = Math.sqrt(dx * dx + dy * dy)
+      }
+
+      // 根据鼠标速度生成尾迹火焰
+      const currentTime = Date.now()
+      if (currentTime - lastTrailTime > 30) { // 每30ms生成一次
+        const trailIntensity = Math.min(mouseSpeed / 50, 2) // 速度越快，火焰越强
+
+        // 在鼠标位置生成尾迹火焰粒子
+        for (let i = 0; i < Math.ceil(trailIntensity * 3); i++) {
+          const angle = Math.random() * Math.PI * 2
+          const speed = 0.5 + Math.random() * 1.5
+
+          mouseTrailParticles.push({
+            x: mouseX + (Math.random() - 0.5) * 20,
+            y: mouseY + (Math.random() - 0.5) * 20,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 0.5,
+            width: 2 + Math.random() * 3,
+            height: 2 + Math.random() * 4,
+            alpha: 1,
+            phase: 'appearing',
+            phaseTimer: 0,
+            floatDuration: 20 + Math.random() * 30,
+            maxAlpha: 0.8 + Math.random() * 0.2,
+            temperature: 0.6 + Math.random() * 0.4,
+            type: 'mouse-trail'
+          })
+        }
+
+        lastTrailTime = currentTime
+      }
     }
 
     // 鼠标离开处理
     const handleMouseLeave = () => {
       mouseX = -1000
       mouseY = -1000
+      mouseSpeed = 0
     }
 
     // 绘制像素粒子动画
@@ -858,6 +995,48 @@ export default {
       waveCtx.fillStyle = bottomGlow
       waveCtx.fillRect(0, height - glowHeight, width, glowHeight)
       
+      // 更新并绘制鼠标尾迹粒子
+      for (let i = mouseTrailParticles.length - 1; i >= 0; i--) {
+        const p = mouseTrailParticles[i]
+        p.phaseTimer++
+
+        if (p.phase === 'appearing') {
+          p.alpha = Math.min(p.alpha + 0.05, p.maxAlpha)
+          if (p.alpha >= p.maxAlpha) {
+            p.phase = 'floating'
+            p.phaseTimer = 0
+          }
+        } else if (p.phase === 'floating') {
+          p.x += p.vx
+          p.y += p.vy
+          p.alpha -= 0.02
+          p.vy += 0.01
+
+          if (p.alpha <= 0 || p.phaseTimer > p.floatDuration) {
+            p.phase = 'disappearing'
+            p.phaseTimer = 0
+          }
+        } else if (p.phase === 'disappearing') {
+          p.alpha = Math.max(p.alpha - 0.05, 0)
+          if (p.alpha <= 0) {
+            mouseTrailParticles.splice(i, 1)
+            continue
+          }
+        }
+
+        // 绘制鼠标尾迹粒子
+        const hue = 20 + p.temperature * 20
+        const lightness = 50 + p.temperature * 20
+        const color = `hsla(${hue}, 100%, ${lightness}%, ${p.alpha})`
+        const glowColor = `hsla(${hue}, 100%, 70%, ${p.alpha * 0.8})`
+
+        waveCtx.fillStyle = color
+        waveCtx.shadowBlur = 15
+        waveCtx.shadowColor = glowColor
+        waveCtx.fillRect(p.x - p.width/2, p.y - p.height/2, p.width, p.height)
+        waveCtx.shadowBlur = 0
+      }
+
       // 更新并绘制粒子
       for (let i = waveParticles.length - 1; i >= 0; i--) {
         const p = waveParticles[i]
@@ -929,16 +1108,35 @@ export default {
             }
           }
           
-          // 鼠标排斥
+          // 鼠标交互：排斥 + 激活火焰效果
           if (mouseX > -500) {
             const dx = p.x - mouseX
             const dy = p.y - mouseY
             const distance = Math.sqrt(dx * dx + dy * dy)
-            if (distance < 80) {
-              const force = (80 - distance) / 80
-              const angle = Math.atan2(dy, dx)
-              p.x += Math.cos(angle) * force * 3
-              p.y += Math.sin(angle) * force * 3
+
+            if (distance < 120) {
+              // 火焰激活效果：鼠标附近的粒子变得更亮、更活跃
+              const activationLevel = (120 - distance) / 120
+
+              // 增强透明度
+              p.alpha = Math.min(p.alpha + activationLevel * 0.05, 1)
+
+              // 增加温度（让颜色更亮）
+              p.temperature = Math.min(p.temperature + activationLevel * 0.02, 1)
+
+              // 增加垂直速度（火焰上升更快）
+              if (distance < 80) {
+                const force = (80 - distance) / 80
+                const angle = Math.atan2(dy, dx)
+
+                // 排斥效果
+                p.x += Math.cos(angle) * force * 3
+                p.y += Math.sin(angle) * force * 3
+
+                // 速度增强
+                p.vy -= activationLevel * 0.3
+                p.vx += (Math.random() - 0.5) * activationLevel * 0.5
+              }
             }
           }
         }
@@ -1052,7 +1250,7 @@ export default {
           // 根据温度和高度选择颜色
           const heightFromBottom = Math.max(0, height - p.y)
           const heightFactor = 1 - (heightFromBottom / (height * 0.7))
-          
+
           if (heightFactor > 0.7) {
             // 底部：亮黄白
             color = `hsla(45, 100%, ${65 + p.temperature * 20}%, ${p.alpha})`
@@ -1076,6 +1274,12 @@ export default {
           // 漂浮：暗橙色
           color = `hsla(20, 70%, ${25 + p.temperature * 10}%, ${p.alpha})`
           glowColor = `hsla(20, 70%, 40%, ${p.alpha * 0.6})`
+        } else if (p.type === 'mouse-trail') {
+          // 鼠标尾迹：亮橙红色，非常明亮
+          const hue = 20 + p.temperature * 15
+          const lightness = 60 + p.temperature * 25
+          color = `hsla(${hue}, 100%, ${lightness}%, ${p.alpha})`
+          glowColor = `hsla(${hue}, 100%, 75%, ${p.alpha * 0.9})`
         }
         
         // 绘制拖尾（火星）
@@ -1214,23 +1418,28 @@ export default {
     // 滚动动画处理
     const handleScroll = () => {
       const scrollY = window.scrollY
-      const hero = document.querySelector('.hero')
+      const heroStory = document.querySelector('.hero-story')
       const brandStory = document.querySelector('.brand-story')
 
       // 未登录：处理星空背景的滑动效果
-      if (hero && !userStore.value.isLoggedIn) {
-        const heroHeight = hero.offsetHeight
+      if (heroStory && !userStore.value.isLoggedIn) {
+        const heroStoryHeight = heroStory.offsetHeight
 
-        if (scrollY > heroHeight * 0.3) {
-          const opacity = 1 - (scrollY - heroHeight * 0.3) / (heroHeight * 0.7)
-          hero.style.opacity = Math.max(0, opacity)
-          hero.style.transform = `translateY(${(scrollY - heroHeight * 0.3) * 0.3}px)`
+        if (scrollY > heroStoryHeight * 0.3) {
+          const opacity = 1 - (scrollY - heroStoryHeight * 0.3) / (heroStoryHeight * 0.7)
+          heroStory.style.opacity = Math.max(0, opacity)
+
+          // 当 heroStory 不可见时，禁用鼠标交互
+          if (opacity <= 0.1) {
+            starMouseX = -1000
+            starMouseY = -1000
+          }
         } else {
-          hero.style.opacity = 1
-          hero.style.transform = 'translateY(0)'
+          heroStory.style.opacity = 1
         }
 
-        if (scrollY > heroHeight * 0.5) {
+        // 当滚动超过星空区域的一半时，显示特性区域
+        if (scrollY > heroStoryHeight * 0.5) {
           featuresSection.value?.classList.add('visible')
         }
       }
@@ -1257,35 +1466,48 @@ export default {
       lastScrollY = scrollY
     }
 
-    // 初始化星空背景
-    const initStarBackground = () => {
+    // 初始化背景效果（根据登录状态）
+    const initBackgroundEffect = () => {
+      // 停止所有动画
+      if (animationId) {
+        cancelAnimationFrame(animationId)
+        animationId = null
+      }
+      if (waveAnimationId) {
+        cancelAnimationFrame(waveAnimationId)
+        waveAnimationId = null
+      }
+
+      // 始终移除星空背景的鼠标事件监听器
+      window.removeEventListener('mousemove', handleStarMouseMove)
+      window.removeEventListener('mouseleave', handleStarMouseLeave)
+
+      // 重置星空鼠标位置
+      starMouseX = -1000
+      starMouseY = -1000
+
+      // 根据登录状态初始化对应的粒子效果
       if (!userStore.value.isLoggedIn) {
-        // 停止海浪动画
-        if (waveAnimationId) {
-          cancelAnimationFrame(waveAnimationId)
-          waveAnimationId = null
-        }
+        // 未登录：初始化星空背景，并添加全局鼠标事件监听
         initParticles()
         animate()
+        window.addEventListener('mousemove', handleStarMouseMove)
+        window.addEventListener('mouseleave', handleStarMouseLeave)
+      } else {
+        // 已登录：初始化火焰效果
+        initWaveCanvas()
       }
     }
 
-    // 监听登录状态变化?
+    // 监听登录状态变化
     watch(() => userStore.value.isLoggedIn, (newVal) => {
-      if (!newVal) {
-        // 退出登录后重新初始化星空背景
-        initStarBackground()
-      } else {
-        // 登录后初始化火焰效果
-        initWaveCanvas()
-      }
+      // 登录状态变化时重新初始化背景效果
+      initBackgroundEffect()
     })
 
     onMounted(() => {
-      initStarBackground()
-      if (userStore.value.isLoggedIn) {
-        initWaveCanvas()
-      }
+      // 初始化背景效果（根据登录状态自动选择星空或火焰）
+      initBackgroundEffect()
       startCarousel()
       window.addEventListener('resize', handleResize)
       window.addEventListener('scroll', handleScroll)
@@ -1298,6 +1520,12 @@ export default {
       if (waveAnimationId) {
         cancelAnimationFrame(waveAnimationId)
       }
+      mouseTrailParticles = [] // 清理鼠标尾迹粒子
+
+      // 清理星空背景的鼠标事件监听器
+      window.removeEventListener('mousemove', handleStarMouseMove)
+      window.removeEventListener('mouseleave', handleStarMouseLeave)
+
       stopCarousel()
       window.removeEventListener('resize', handleResize)
       window.removeEventListener('scroll', handleScroll)
@@ -1315,6 +1543,7 @@ export default {
       products,
       currentSlide,
       goToCategory,
+      handleSearch,
       userStore,
       loggedInCategory,
       filteredLoggedProducts,
@@ -1332,7 +1561,12 @@ export default {
       mouseProducts,
       keyboardProducts,
       headsetProducts,
-      controllerProducts
+      controllerProducts,
+      handleMouseMove,
+      handleMouseLeave,
+      handleWaveClick,
+      handleStarMouseMove,
+      handleStarMouseLeave
     }
   }
 }
@@ -1342,60 +1576,136 @@ export default {
 <style scoped>
 /* 星空背景 */
 .star-background {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: 0;
+  pointer-events: none;
 }
 
 .star-canvas {
   width: 100%;
   height: 100%;
+  display: block;
 }
 
-/* 欢迎页面区域 */
-.hero {
+/* 星空欢迎区域 */
+.hero-story {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   min-height: 100vh;
+  padding: 80px 40px;
+  background: #050508;
+  overflow: hidden;
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  padding: 60px 24px;
+  z-index: 0;
   transition: opacity 0.3s ease, transform 0.3s ease;
-  z-index: 1;
 }
 
-.hero-content {
-  text-align: center;
-  max-width: 800px;
+/* 星空欢迎内容 */
+.hero-story .hero-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 80px;
+  z-index: 10;
 }
 
-.hero-title {
-  font-size: 64px;
-  font-weight: 700;
+/* 星空欢迎占位元素 */
+.hero-story-placeholder {
+  height: 100vh;
+  width: 100%;
+}
+
+/* 左侧标题组 */
+.title-group-left {
+  position: absolute;
+  left: 80px;
+  bottom: 80px;
+  text-align: left;
+}
+
+.title-en-large {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 90px;
+  font-weight: 900;
   color: #ffffff;
-  margin-bottom: 24px;
-  text-shadow: 0 0 40px rgba(100, 150, 255, 0.5);
-  animation: titleGlow 3s ease-in-out infinite;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  margin: 0;
+  white-space: nowrap;
+  text-shadow: 0 0 30px rgba(255, 100, 50, 0.6),
+               0 0 60px rgba(255, 50, 0, 0.4);
 }
 
-@keyframes titleGlow {
-  0%, 100% { text-shadow: 0 0 40px rgba(100, 150, 255, 0.5); }
-  50% { text-shadow: 0 0 60px rgba(100, 150, 255, 0.8), 0 0 100px rgba(100, 150, 255, 0.4); }
+.title-zh-large {
+  font-family: 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
+  font-size: 65px;
+  font-weight: 900;
+  color: #E0E0E0;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  margin: 12px 0 0 0;
+  text-shadow: 0 0 20px rgba(255, 150, 50, 0.4);
 }
 
-.hero-subtitle {
-  font-size: 22px;
-  color: #8b949e;
-  margin-bottom: 48px;
-  line-height: 1.6;
+/* 右侧内容区 */
+.content-group-right {
+  position: absolute;
+  right: 80px;
+  bottom: 80px;
+  text-align: right;
+  max-width: 500px;
 }
 
-.hero-search {
-  display: flex;
-  justify-content: center;
+.desc-text-small {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  line-height: 1.8;
+  margin: 0 0 24px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.content-group-right .about-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+  text-align: right;
+}
+
+.content-group-right .about-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(34, 197, 94, 0.6);
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+.content-group-right .arrow-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+.content-group-right .about-btn:hover .arrow-icon {
+  transform: translateX(4px);
 }
 
 .search-box {
@@ -1454,6 +1764,135 @@ export default {
 .search-btn:hover {
   transform: scale(1.05);
   box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* 登录后页面内联内容区 */
+.content-center {
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  transform: translate(-50%, -50%);
+  max-width: 800px;
+  z-index: 10;
+  text-align: center;
+  width: 90%;
+}
+
+.welcome-title {
+  font-size: 72px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 16px;
+  text-shadow: 0 0 40px rgba(255, 69, 0, 0.6),
+               0 0 80px rgba(255, 140, 0, 0.4);
+  animation: welcomeGlow 3s ease-in-out infinite;
+}
+
+@keyframes welcomeGlow {
+  0%, 100% {
+    text-shadow: 0 0 40px rgba(255, 69, 0, 0.6),
+                 0 0 80px rgba(255, 140, 0, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 60px rgba(255, 69, 0, 0.9),
+                 0 0 100px rgba(255, 140, 0, 0.6),
+                 0 0 140px rgba(255, 200, 0, 0.3);
+  }
+}
+
+.welcome-subtitle {
+  font-size: 22px;
+  color: #ffa500;
+  margin-bottom: 40px;
+  line-height: 1.6;
+  text-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
+}
+
+.welcome-search {
+  display: flex;
+  justify-content: center;
+}
+
+.welcome-search .search-box {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 69, 0, 0.5);
+  border-radius: 20px;
+  padding: 10px 10px 10px 10px;
+  width: 100%;
+  max-width: 700px;
+  transition: all 0.3s ease;
+}
+
+.welcome-search .search-box:focus-within {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 140, 0, 0.8);
+  box-shadow: 0 0 30px rgba(255, 69, 0, 0.4),
+              0 0 60px rgba(255, 140, 0, 0.2);
+}
+
+.welcome-search .search-icon {
+  width: 24px;
+  height: 24px;
+  color: #ff6b35;
+}
+
+.welcome-search .search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 16px;
+  padding: 0 12px;
+}
+
+.welcome-search .search-input::placeholder {
+  color: #ff6b35;
+}
+
+.welcome-search .search-btn {
+
+  padding: 12px 32px;
+
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+
+  border: none;
+
+  border-radius: 8px;
+
+  color: #ffffff;
+
+  font-size: 16px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: all 0.3s ease;
+
+  white-space: nowrap;
+
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+
+}
+
+
+
+
+
+.welcome-search .search-btn:hover {
+
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 50%, #fca5a5 100%);
+
+  transform: translateY(-2px);
+
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.6),
+
+              0 0 60px rgba(248, 113, 113, 0.4);
+
 }
 
 /* 为什么选择我们 */
@@ -1554,7 +1993,7 @@ export default {
 
 .stat-value {
   font-size: 48px;
-  font-weight: 700;
+  font-weight: 900;
   color: #667eea;
   margin-bottom: 8px;
 }
@@ -1867,23 +2306,6 @@ export default {
   width: 100%;
 }
 
-/* 世界地图 Canvas 容器 */
-.map-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #000;
-  overflow: hidden;
-}
-
-.map-container canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
 /* 左下角标题组 */
 .title-group {
   position: absolute;
@@ -1896,7 +2318,7 @@ export default {
 .title-group .title-en {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 128px;
-  font-weight: 700;
+  font-weight: 900;
   color: #FFFFFF;
   letter-spacing: -0.5px;
   line-height: 1.1;
@@ -1967,6 +2389,90 @@ export default {
   transform: translateX(4px);
 }
 
+.hero-title-inline {
+  font-size: 64px;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 24px;
+  text-shadow: 0 0 40px rgba(100, 150, 255, 0.5);
+  animation: titleGlow 3s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+  0%, 100% { text-shadow: 0 0 40px rgba(100, 150, 255, 0.5); }
+  50% { text-shadow: 0 0 60px rgba(100, 150, 255, 0.8), 0 0 100px rgba(100, 150, 255, 0.4); }
+}
+
+.hero-subtitle-inline {
+  font-size: 22px;
+  color: #8b949e;
+  margin-bottom: 48px;
+  line-height: 1.6;
+}
+
+.hero-search-inline {
+  display: flex;
+  justify-content: center;
+}
+
+.hero-search-inline .search-box {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+  padding: 8px 8px 8px 20px;
+  width: 100%;
+  max-width: 560px;
+  transition: all 0.3s ease;
+}
+
+.hero-search-inline .search-box:focus-within {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(100, 150, 255, 0.5);
+  box-shadow: 0 0 30px rgba(100, 150, 255, 0.2);
+}
+
+.hero-search-inline .search-icon {
+  width: 20px;
+  height: 20px;
+  color: #8b949e;
+}
+
+.hero-search-inline .search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 16px;
+  padding: 0 12px;
+}
+
+.hero-search-inline .search-input::placeholder {
+  color: #6b7280;
+}
+
+.hero-search-inline .search-btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 40px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.hero-search-inline .search-btn:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
 /* 产品展示区域 */
 .products-showcase {
   padding: 100px 40px 60px 40px;
@@ -1987,7 +2493,7 @@ export default {
 
 .showcase-title {
   font-size: 36px;
-  font-weight: 700;
+  font-weight: 900;
   color: #ffffff;
   text-align: center;
   margin-bottom: 50px;
@@ -2072,33 +2578,113 @@ export default {
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .title-group .title-en {
-    font-size: 96px;
+    font-size: 140px;
   }
-  
+
   .title-group .title-zh {
     font-size: 42px;
   }
-  
+
   .content-right {
     max-width: 400px;
+  }
+
+  .welcome-title {
+    font-size: 60px;
+  }
+
+  .welcome-subtitle {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 1024px) {
+  /* 未登录页面中等屏幕响应式 */
+  .title-group-left {
+    left: 60px;
+    bottom: 60px;
+  }
+
+  .title-en-large {
+    font-size: 72px;
+  }
+
+  .title-zh-large {
+    font-size: 28px;
+  }
+
+  .content-group-right {
+    right: 60px;
+    bottom: 60px;
+    max-width: 400px;
+  }
+
+  .desc-text-small {
+    font-size: 16px;
+  }
+
+  /* 登录后页面中等屏幕响应式 */
+  .content-center {
+    top: 35%;
+  }
+
+  .welcome-title {
+    font-size: 56px;
+  }
+
+  .welcome-subtitle {
+    font-size: 22px;
+  }
+
+  .welcome-search .search-box {
+    max-width: 480px;
   }
 }
 
 @media (max-width: 768px) {
+  /* 未登录页面小屏幕响应式 */
+  .hero-content {
+    padding: 40px;
+  }
+
+  .title-group-left {
+    left: 40px;
+    bottom: 200px;
+  }
+
+  .title-en-large {
+    font-size: 48px;
+  }
+
+  .title-zh-large {
+    font-size: 20px;
+  }
+
+  .content-group-right {
+    right: 40px;
+    bottom: 40px;
+    max-width: 100%;
+  }
+
+  .desc-text-small {
+    font-size: 14px;
+  }
+
+  /* 登录后页面响应式 */
   .title-group {
     left: 5vw;
     bottom: 15vh;
     max-width: 100%;
   }
-  
+
   .title-group .title-en {
     font-size: 64px;
   }
-  
+
   .title-group .title-zh {
     font-size: 32px;
   }
-  
+
   .content-right {
     left: 5vw;
     right: 5vw;
@@ -2106,17 +2692,49 @@ export default {
     max-width: 100%;
     text-align: left;
   }
-  
+
   .content-right .desc-text {
     font-size: 16px;
   }
-  
+
   .content-right .about-btn {
     width: 100%;
     justify-content: center;
   }
+
+  .content-center {
+    width: 95%;
+    top: 35%;
+  }
+
+  .welcome-title {
+    font-size: 42px;
+  }
+
+  .welcome-subtitle {
+    font-size: 20px;
+  }
+
+  .welcome-search .search-box {
+    flex-direction: column;
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .welcome-search .search-btn {
+    width: 100%;
+    margin-top: 8px;
+    border-radius: 8px;
+  }
+
 }
 </style>
+
+
+
+
+
+
 
 
 
