@@ -427,48 +427,310 @@
     <div class="order-modal" v-if="showOrderModal" @click.self="closeOrderModal">
       <div class="order-content">
         <h2>确认订单</h2>
-        <div class="order-items">
-          <div class="order-item" v-for="(item, index) in orderItems" :key="index">
-            <img :src="item.image" :alt="item.name" />
-            <div class="order-item-info">
-              <h4>{{ item.name }}</h4>
-              <span>× {{ item.quantity }}</span>
-              <span class="item-total">￥{{ (item.price * item.quantity).toFixed(2) }}</span>
+        
+        <!-- 收货地址 -->
+        <div class="order-section order-address">
+          <div class="section-header">
+            <h3>收货地址</h3>
+            <button class="edit-address-btn" @click="openAddressModal">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+              </svg>
+              管理/添加地址
+            </button>
+          </div>
+          <div v-if="selectedAddress" class="address-info">
+            <div class="address-item">
+              <span class="address-label">收货人：</span>
+              <span>{{ selectedAddress.name }}</span>
+              <span class="default-badge" v-if="selectedAddress.isDefault">默认</span>
+            </div>
+            <div class="address-item">
+              <span class="address-label">联系电话：</span>
+              <span>{{ selectedAddress.phone }}</span>
+            </div>
+            <div class="address-item">
+              <span class="address-label">收货地址：</span>
+              <span>{{ selectedAddress.province }} {{ selectedAddress.city }} {{ selectedAddress.district }} {{ selectedAddress.detail }}</span>
             </div>
           </div>
+          <div v-else class="address-empty">
+            <span>📍</span>
+            <p>请选择或添加收货地址</p>
+          </div>
         </div>
-        <div class="order-summary">
+        
+        <!-- 商品清单 -->
+        <div class="order-section order-items">
+          <h3>商品清单</h3>
+          <div class="order-header">
+            <span class="col-product">商品信息</span>
+            <span class="col-price">单价</span>
+            <span class="col-quantity">数量</span>
+            <span class="col-total">小计</span>
+          </div>
+          <div class="order-item" v-for="(item, index) in orderItems" :key="index">
+            <div class="item-product">
+              <img :src="item.image" :alt="item.name" />
+              <div class="item-details">
+                <h4>{{ item.name }}</h4>
+                <span class="item-category">{{ getCategoryName(item.category) }}</span>
+                <div class="item-features" v-if="item.features && item.features.length > 0">
+                  <span v-for="(feat, i) in item.features.slice(0, 3)" :key="i" class="feature-tag">{{ feat }}</span>
+                </div>
+              </div>
+            </div>
+            <span class="item-price">￥{{ item.price.toFixed(2) }}</span>
+            <span class="item-quantity">× {{ item.quantity }}</span>
+            <span class="item-total">￥{{ (item.price * item.quantity).toFixed(2) }}</span>
+          </div>
+        </div>
+        
+        <!-- 配送方式 -->
+        <div class="order-section order-delivery">
+          <h3>配送方式</h3>
+          <div class="delivery-options">
+            <label class="delivery-option">
+              <input type="radio" name="delivery" value="express" checked />
+              <div class="delivery-info">
+                <span class="delivery-name">顺丰快递</span>
+                <span class="delivery-time">预计3-5天送达</span>
+                <span class="delivery-fee">免运费</span>
+              </div>
+            </label>
+            <label class="delivery-option">
+              <input type="radio" name="delivery" value="standard" />
+              <div class="delivery-info">
+                <span class="delivery-name">标准快递</span>
+                <span class="delivery-time">预计5-7天送达</span>
+                <span class="delivery-fee">免运费</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        
+        <!-- 订单备注 -->
+        <div class="order-section order-remark">
+          <h3>订单备注</h3>
+          <textarea 
+            v-model="orderRemark"
+            class="remark-input"
+            placeholder="选填，可以告诉商家您对订单的特殊要求..."
+            rows="3"
+            maxlength="200"
+          ></textarea>
+          <span class="char-count">{{ orderRemark.length }}/200</span>
+        </div>
+        
+        <!-- 费用明细 -->
+        <div class="order-section order-summary">
+          <h3>费用明细</h3>
           <div class="summary-row">
             <span>商品总价：</span>
             <span>￥{{ orderTotal.toFixed(2) }}</span>
           </div>
           <div class="summary-row">
             <span>运费：</span>
-            <span>￥0.00</span>
+            <span class="free-shipping">免运费</span>
+          </div>
+          <div class="summary-row" v-if="discount > 0">
+            <span>优惠金额：</span>
+            <span class="discount">-￥{{ discount.toFixed(2) }}</span>
           </div>
           <div class="summary-row total">
             <span>应付总额：</span>
-            <span>￥{{ orderTotal.toFixed(2) }}</span>
+            <span class="total-price">￥{{ (orderTotal - discount).toFixed(2) }}</span>
           </div>
         </div>
-        <div class="order-payment">
-          <h4>支付方式</h4>
+        
+        <!-- 支付方式 -->
+        <div class="order-section order-payment">
+          <h3>支付方式</h3>
           <div class="payment-options">
-            <label class="payment-option">
-              <input type="radio" name="payment" value="alipay" checked />
-              <span>支付宝</span>
+            <label class="payment-option" :class="{ active: selectedPayment === 'alipay' }">
+              <input type="radio" name="payment" value="alipay" v-model="selectedPayment" />
+              <div class="payment-info">
+                <span class="payment-icon">💳</span>
+                <div class="payment-details">
+                  <span class="payment-name">支付宝</span>
+                  <span class="payment-desc">推荐使用支付宝支付</span>
+                </div>
+              </div>
             </label>
-            <label class="payment-option">
-              <input type="radio" name="payment" value="wechat" />
-              <span>微信支付</span>
+            <label class="payment-option" :class="{ active: selectedPayment === 'wechat' }">
+              <input type="radio" name="payment" value="wechat" v-model="selectedPayment" />
+              <div class="payment-info">
+                <span class="payment-icon">💚</span>
+                <div class="payment-details">
+                  <span class="payment-name">微信支付</span>
+                  <span class="payment-desc">便捷安全的微信支付</span>
+                </div>
+              </div>
             </label>
-            <label class="payment-option">
-              <input type="radio" name="payment" value="card" />
-              <span>银行卡</span>
+            <label class="payment-option" :class="{ active: selectedPayment === 'card' }">
+              <input type="radio" name="payment" value="card" v-model="selectedPayment" />
+              <div class="payment-info">
+                <span class="payment-icon">🏦</span>
+                <div class="payment-details">
+                  <span class="payment-name">银行卡</span>
+                  <span class="payment-desc">支持各大银行储蓄卡</span>
+                </div>
+              </div>
             </label>
           </div>
         </div>
-        <button class="pay-btn" @click="processPayment">确认支付</button>
+        
+        <!-- 底部操作 -->
+        <div class="order-footer">
+          <div class="footer-total">
+            <span>应付总额：</span>
+            <span class="total-amount">￥{{ (orderTotal - discount).toFixed(2) }}</span>
+          </div>
+          <div class="footer-actions">
+            <button class="cancel-pay-btn" @click="cancelPayment">取消支付</button>
+            <button class="pay-btn" @click="processPayment">确认支付</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 地址管理弹窗 -->
+    <div class="address-modal" v-if="showAddressModal" @click.self="closeAddressModal">
+      <div class="address-modal-content">
+        <div class="modal-header">
+          <h2>{{ editingAddress ? '编辑收货地址' : '添加收货地址' }}</h2>
+          <button class="close-modal" @click="closeAddressModal">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 地址列表 -->
+        <div class="address-list-wrapper" v-if="!showAddressForm">
+          <div class="address-list">
+            <div class="address-item-card" v-for="address in addresses" :key="address.id" :class="{ active: selectedAddress?.id === address.id }">
+              <div class="address-card-info">
+                <div class="address-card-header">
+                  <span class="address-name">{{ address.name }}</span>
+                  <span class="address-phone">{{ address.phone }}</span>
+                  <span class="default-badge" v-if="address.isDefault">默认</span>
+                </div>
+                <div class="address-card-detail">
+                  {{ address.province }} {{ address.city }} {{ address.district }} {{ address.detail }}
+                </div>
+              </div>
+              <div class="address-card-actions">
+                <button class="action-btn" @click="selectAddress(address)" v-if="selectedAddress?.id !== address.id">
+                  选择
+                </button>
+                <button class="action-btn" @click="editAddress(address)">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                </button>
+                <button class="action-btn danger" @click="deleteAddress(address.id)" v-if="addresses.length > 1">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button class="add-address-btn" @click="startAddAddress" type="button" style="cursor: pointer !important; pointer-events: auto !important;">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            添加新地址
+          </button>
+        </div>
+
+        <!-- 地址表单 -->
+        <div class="address-form" v-else>
+          <div class="form-group">
+            <label>收货人 *</label>
+            <input
+              type="text"
+              v-model="addressForm.name"
+              placeholder="请输入收货人姓名"
+              maxlength="20"
+            />
+          </div>
+          <div class="form-group">
+            <label>联系电话 *</label>
+            <input
+              type="tel"
+              v-model="addressForm.phone"
+              placeholder="请输入手机号码"
+              maxlength="11"
+            />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>省份 *</label>
+              <select v-model="addressForm.province">
+                <option value="上海市">上海市</option>
+                <option value="北京市">北京市</option>
+                <option value="广东省">广东省</option>
+                <option value="浙江省">浙江省</option>
+                <option value="江苏省">江苏省</option>
+                <option value="四川省">四川省</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>城市 *</label>
+              <select v-model="addressForm.city">
+                <option value="上海市">上海市</option>
+                <option value="北京市">北京市</option>
+                <option value="广州市">广州市</option>
+                <option value="深圳市">深圳市</option>
+                <option value="杭州市">杭州市</option>
+                <option value="南京市">南京市</option>
+                <option value="成都市">成都市</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>区/县 *</label>
+            <select v-model="addressForm.district">
+              <option value="浦东新区">浦东新区</option>
+              <option value="黄浦区">黄浦区</option>
+              <option value="徐汇区">徐汇区</option>
+              <option value="长宁区">长宁区</option>
+              <option value="静安区">静安区</option>
+              <option value="普陀区">普陀区</option>
+              <option value="虹口区">虹口区</option>
+              <option value="杨浦区">杨浦区</option>
+              <option value="闵行区">闵行区</option>
+              <option value="宝山区">宝山区</option>
+              <option value="嘉定区">嘉定区</option>
+              <option value="松江区">松江区</option>
+              <option value="青浦区">青浦区</option>
+              <option value="奉贤区">奉贤区</option>
+              <option value="金山区">金山区</option>
+              <option value="崇明区">崇明区</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>详细地址 *</label>
+            <textarea
+              v-model="addressForm.detail"
+              placeholder="请输入详细地址，如街道、门牌号等"
+              rows="3"
+              maxlength="100"
+            ></textarea>
+          </div>
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="addressForm.isDefault" />
+              <span>设为默认地址</span>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button class="cancel-btn" @click="cancelEditAddress">取消</button>
+            <button class="save-btn" @click="saveAddress">保存地址</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -518,7 +780,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import WebsiteLayout from '../components/WebsiteLayout.vue'
-import { getProducts, getProductReviews, addProductReview } from '../api/index'
+import { getProducts, getProductReviews, addProductReview, createOrder, completePayment, cancelOrder, getUserOrders, getOrderDetail } from '../api/index'
 
 // 从后端获取产品数据
 const productsFromBackend = ref([])
@@ -622,7 +884,37 @@ export default {
     const selectedProduct = ref(null)
     const showOrderModal = ref(false)
     const orderItems = ref([])
+    const selectedPayment = ref('alipay')
+    const orderRemark = ref('')
+    const discount = ref(0)
     const cartItems = ref([])
+
+    // 地址管理
+    const addresses = ref([
+      {
+        id: 1,
+        name: '张三',
+        phone: '138****8888',
+        province: '上海市',
+        city: '上海市',
+        district: '浦东新区',
+        detail: '张江高科技园区科苑路88号',
+        isDefault: true
+      }
+    ])
+    const selectedAddress = ref(null)
+    const showAddressModal = ref(false)
+    const showAddressForm = ref(false)
+    const editingAddress = ref(null)
+    const addressForm = ref({
+      name: '',
+      phone: '',
+      province: '上海市',
+      city: '上海市',
+      district: '浦东新区',
+      detail: '',
+      isDefault: false
+    })
     const cartAnimations = ref([])
     const products = ref([])
     const loading = ref(true)
@@ -645,6 +937,11 @@ export default {
       }
       loading.value = false
       startAdCarousel()
+
+      // 初始化选中地址
+      if (addresses.value.length > 0) {
+        selectedAddress.value = addresses.value.find(addr => addr.isDefault) || addresses.value[0]
+      }
     })
     
     // 监听分类变化，重新获取产品
@@ -826,6 +1123,10 @@ export default {
     // 立即购买
     const buyNow = (product) => {
       orderItems.value = [{ ...product, quantity: 1 }]
+      // 自动选中默认地址
+      if (!selectedAddress.value && addresses.value.length > 0) {
+        selectedAddress.value = addresses.value.find(addr => addr.isDefault) || addresses.value[0]
+      }
       showOrderModal.value = true
       showCart.value = false
     }
@@ -875,6 +1176,10 @@ export default {
         return
       }
       orderItems.value = [...selectedItems]
+      // 自动选中默认地址
+      if (!selectedAddress.value && addresses.value.length > 0) {
+        selectedAddress.value = addresses.value.find(addr => addr.isDefault) || addresses.value[0]
+      }
       showOrderModal.value = true
     }
     
@@ -883,13 +1188,367 @@ export default {
       showOrderModal.value = false
     }
     
-    // 处理支付
-    const processPayment = () => {
-      alert('支付成功！感谢您的购买')
-      // 清空购物车
-      const selectedIds = orderItems.value.map(item => item.id)
-      cartItems.value = cartItems.value.filter(item => !selectedIds.includes(item.id))
-      showOrderModal.value = false
+    // 处理支付（两步流程：先创建待支付订单，然后完成支付）
+    const processPayment = async () => {
+      if (!selectedAddress.value) {
+        alert('请选择收货地址')
+        return
+      }
+
+      // 从sessionStorage获取当前用户信息
+      const userData = sessionStorage.getItem('currentUser')
+      if (!userData) {
+        alert('请先登录后再购买')
+        return
+      }
+
+      let userId = null
+      let username = 'guest'
+
+      try {
+        const user = JSON.parse(userData)
+        console.log('从sessionStorage解析的用户数据：', user)
+
+        userId = user.id
+        username = user.username || user.username
+
+        console.log('提取的userId：', userId)
+        console.log('提取的username：', username)
+
+        if (!userId) {
+          alert('用户信息不完整，请重新登录')
+          return
+        }
+      } catch (e) {
+        console.error('解析用户数据失败', e)
+        alert('用户信息错误，请重新登录')
+        return
+      }
+
+      const paymentName = {
+        alipay: '支付宝',
+        wechat: '微信支付',
+        card: '银行卡'
+      }[selectedPayment.value] || '未知'
+
+      // 准备订单项数据
+      const items = orderItems.value.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        productImage: item.image || '',
+        quantity: item.quantity,
+        price: parseFloat(item.price.toFixed(2)),
+        subtotal: parseFloat((item.price * item.quantity).toFixed(2))
+      }))
+
+      // 准备订单数据（后端会自动创建为pending状态）
+      const orderData = {
+        userId: parseInt(userId),
+        username: username,
+        receiverName: selectedAddress.value.name,
+        receiverPhone: selectedAddress.value.phone,
+        receiverAddress: `${selectedAddress.value.province} ${selectedAddress.value.city} ${selectedAddress.value.district} ${selectedAddress.value.detail}`,
+        totalAmount: parseFloat(orderTotal.value.toFixed(2)),
+        discountAmount: parseFloat(discount.value.toFixed(2)),
+        payAmount: parseFloat((orderTotal.value - discount.value).toFixed(2)),
+        payMethod: selectedPayment.value,
+        remark: orderRemark.value || '',
+        items: items
+      }
+
+      console.log('准备创建订单，数据：', orderData)
+
+      // 第一步：创建订单（后端会创建为pending状态）
+      try {
+        const result = await createOrder(orderData)
+        console.log('创建订单结果：', result)
+
+        if (result.success) {
+          const orderNo = result.data.order.orderNo
+          const orderId = result.data.order.id
+
+          // 第二步：完成支付
+          const payResult = await completePayment(orderId)
+          console.log('完成支付结果：', payResult)
+
+          if (payResult.success) {
+            alert(`支付成功！\n\n订单号：${orderNo}\n收货人：${selectedAddress.value.name}\n联系电话：${selectedAddress.value.phone}\n收货地址：${selectedAddress.value.province} ${selectedAddress.value.city} ${selectedAddress.value.district} ${selectedAddress.value.detail}\n\n支付方式：${paymentName}\n支付金额：￥${(orderTotal.value - discount.value).toFixed(2)}\n\n感谢您的购买，我们会尽快为您发货！`)
+
+            // 清空购物车
+            const selectedIds = orderItems.value.map(item => item.id)
+            cartItems.value = cartItems.value.filter(item => !selectedIds.includes(item.id))
+
+            // 重置订单状态
+            showOrderModal.value = false
+            selectedPayment.value = 'alipay'
+            orderRemark.value = ''
+            discount.value = 0
+          } else {
+            // 支付失败，但订单已创建（pending状态），提示用户可以去订单页面完成支付
+            alert(`订单已创建，但支付失败！\n\n订单号：${orderNo}\n订单状态：待支付\n\n您可以在"我的订单"页面继续完成支付或取消订单。`)
+
+            // 关闭订单弹窗，不清空购物车（用户可以重新选择）
+            showOrderModal.value = false
+          }
+        } else {
+          alert('订单创建失败：' + (result.message || '未知错误'))
+        }
+      } catch (error) {
+        console.error('创建订单出错：', error)
+        alert('订单创建失败：' + error.message)
+      }
+    }
+
+    // 取消支付（创建待支付订单后）
+    const cancelPayment = async () => {
+      if (!selectedAddress.value) {
+        alert('请选择收货地址')
+        return
+      }
+
+      // 从sessionStorage获取当前用户信息
+      const userData = sessionStorage.getItem('currentUser')
+      if (!userData) {
+        alert('请先登录后再购买')
+        return
+      }
+
+      let userId = null
+      let username = 'guest'
+
+      try {
+        const user = JSON.parse(userData)
+        userId = user.id
+        username = user.username || user.username
+
+        if (!userId) {
+          alert('用户信息不完整，请重新登录')
+          return
+        }
+      } catch (e) {
+        console.error('解析用户数据失败', e)
+        alert('用户信息错误，请重新登录')
+        return
+      }
+
+      // 准备订单项数据
+      const items = orderItems.value.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        productImage: item.image || '',
+        quantity: item.quantity,
+        price: parseFloat(item.price.toFixed(2)),
+        subtotal: parseFloat((item.price * item.quantity).toFixed(2))
+      }))
+
+      // 准备订单数据（后端会创建为pending状态）
+      const orderData = {
+        userId: parseInt(userId),
+        username: username,
+        receiverName: selectedAddress.value.name,
+        receiverPhone: selectedAddress.value.phone,
+        receiverAddress: `${selectedAddress.value.province} ${selectedAddress.value.city} ${selectedAddress.value.district} ${selectedAddress.value.detail}`,
+        totalAmount: parseFloat(orderTotal.value.toFixed(2)),
+        discountAmount: parseFloat(discount.value.toFixed(2)),
+        payAmount: parseFloat((orderTotal.value - discount.value).toFixed(2)),
+        payMethod: selectedPayment.value,
+        remark: orderRemark.value || '',
+        items: items
+      }
+
+      console.log('准备创建待支付订单，数据：', orderData)
+
+      try {
+        const result = await createOrder(orderData)
+        console.log('创建订单结果：', result)
+
+        if (result.success) {
+          const orderNo = result.data.order.orderNo
+
+          alert(`订单已创建！\n\n订单号：${orderNo}\n订单状态：待支付\n\n您可以在"我的订单"页面继续完成支付或取消订单。`)
+
+          // 清空购物车中参与本次订单的商品
+          const selectedIds = orderItems.value.map(item => item.id)
+          cartItems.value = cartItems.value.filter(item => !selectedIds.includes(item.id))
+
+          // 关闭订单弹窗
+          showOrderModal.value = false
+          selectedPayment.value = 'alipay'
+          orderRemark.value = ''
+          discount.value = 0
+        } else {
+          alert('订单创建失败：' + (result.message || '未知错误'))
+        }
+      } catch (error) {
+        console.error('创建订单出错：', error)
+        alert('订单创建失败：' + error.message)
+      }
+    }
+
+    // 地址管理方法
+    const openAddressModal = () => {
+      // 如果没有选中地址且地址列表不为空，默认选择第一个
+      if (!selectedAddress.value && addresses.value.length > 0) {
+        selectedAddress.value = addresses.value.find(addr => addr.isDefault) || addresses.value[0]
+      }
+      showAddressModal.value = true
+      editingAddress.value = null
+    }
+
+    const closeAddressModal = () => {
+      showAddressModal.value = false
+      editingAddress.value = null
+      showAddressForm.value = false
+      resetAddressForm()
+    }
+
+    const resetAddressForm = () => {
+      addressForm.value = {
+        name: '',
+        phone: '',
+        province: '上海市',
+        city: '上海市',
+        district: '浦东新区',
+        detail: '',
+        isDefault: false
+      }
+    }
+
+    const selectAddress = (address) => {
+      selectedAddress.value = address
+      showAddressModal.value = false
+    }
+
+    const startAddAddress = () => {
+      try {
+        console.log('=== startAddAddress 开始执行 ===')
+        console.log('当前 editingAddress:', editingAddress.value)
+        console.log('当前 showAddressForm:', showAddressForm.value)
+        
+        // 清除编辑状态（表示是添加新地址，不是编辑）
+        editingAddress.value = null
+        
+        // 重置表单
+        resetAddressForm()
+        
+        // 显示表单
+        showAddressForm.value = true
+        
+        console.log('设置后 showAddressForm:', showAddressForm.value)
+        console.log('设置后 editingAddress:', editingAddress.value)
+        console.log('=== startAddAddress 执行完成 ===')
+      } catch (error) {
+        console.error('startAddAddress 出错:', error)
+        alert('打开添加地址表单时出错：' + error.message)
+      }
+    }
+
+    const editAddress = (address) => {
+      editingAddress.value = address
+      addressForm.value = {
+        name: address.name,
+        phone: address.phone,
+        province: address.province,
+        city: address.city,
+        district: address.district,
+        detail: address.detail,
+        isDefault: address.isDefault
+      }
+      // 显示表单
+      showAddressForm.value = true
+    }
+
+    const cancelEditAddress = () => {
+      editingAddress.value = null
+      resetAddressForm()
+      showAddressForm.value = false
+    }
+
+    const saveAddress = () => {
+      // 验证表单
+      if (!addressForm.value.name.trim()) {
+        alert('请输入收货人姓名')
+        return
+      }
+      if (!addressForm.value.phone.trim()) {
+        alert('请输入联系电话')
+        return
+      }
+      if (!/^1[3-9]\d{9}$/.test(addressForm.value.phone)) {
+        alert('请输入正确的手机号码')
+        return
+      }
+      if (!addressForm.value.detail.trim()) {
+        alert('请输入详细地址')
+        return
+      }
+
+      // 如果设置为默认地址，先取消所有其他地址的默认状态
+      if (addressForm.value.isDefault) {
+        addresses.value.forEach(addr => addr.isDefault = false)
+      }
+
+      if (editingAddress.value) {
+        // 编辑现有地址
+        const index = addresses.value.findIndex(addr => addr.id === editingAddress.value.id)
+        if (index !== -1) {
+          addresses.value[index] = {
+            ...editingAddress.value,
+            name: addressForm.value.name,
+            phone: addressForm.value.phone,
+            province: addressForm.value.province,
+            city: addressForm.value.city,
+            district: addressForm.value.district,
+            detail: addressForm.value.detail,
+            isDefault: addressForm.value.isDefault
+          }
+        }
+        alert('地址修改成功')
+      } else {
+        // 添加新地址
+        const newId = Math.max(...addresses.value.map(addr => addr.id), 0) + 1
+        const newAddress = {
+          id: newId,
+          name: addressForm.value.name,
+          phone: addressForm.value.phone,
+          province: addressForm.value.province,
+          city: addressForm.value.city,
+          district: addressForm.value.district,
+          detail: addressForm.value.detail,
+          isDefault: addressForm.value.isDefault
+        }
+
+        addresses.value.push(newAddress)
+        alert('地址添加成功')
+      }
+
+      // 如果这是第一个地址或设为默认，自动选中
+      if (addresses.value.length === 1 || addressForm.value.isDefault) {
+        selectedAddress.value = addresses.value.find(addr => addr.isDefault) || addresses.value[addresses.value.length - 1]
+      }
+
+      editingAddress.value = null
+      resetAddressForm()
+      // 返回列表视图
+      showAddressForm.value = false
+    }
+
+    const deleteAddress = (id) => {
+      if (!confirm('确定要删除这个地址吗？')) {
+        return
+      }
+
+      const index = addresses.value.findIndex(addr => addr.id === id)
+      if (index !== -1) {
+        addresses.value.splice(index, 1)
+
+        // 如果删除的是选中的地址，重新选择
+        if (selectedAddress.value?.id === id) {
+          selectedAddress.value = addresses.value.length > 0 ? addresses.value[0] : null
+        }
+
+        alert('地址删除成功')
+      }
     }
     
     // 图片查看器相关方法
@@ -1003,6 +1662,23 @@ export default {
       showOrderModal,
       orderItems,
       orderTotal,
+      selectedPayment,
+      orderRemark,
+      discount,
+      addresses,
+      selectedAddress,
+      showAddressModal,
+      showAddressForm,
+      editingAddress,
+      addressForm,
+      openAddressModal,
+      closeAddressModal,
+      selectAddress,
+      startAddAddress,
+      editAddress,
+      cancelEditAddress,
+      saveAddress,
+      deleteAddress,
       cartAnimations,
       currentGalleryIndex,
       activeDetailTab,
@@ -1020,6 +1696,7 @@ export default {
       checkout,
       closeOrderModal,
       processPayment,
+      cancelPayment,
       handleIndicatorClick,
       resetAdCarousel,
       getCategoryName,
@@ -2349,104 +3026,286 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 1002;
+  overflow-y: auto;
+  padding: 20px;
 }
 
 .order-content {
   background: #161b22;
   border-radius: 20px;
   padding: 40px;
-  max-width: 500px;
+  max-width: 700px;
   width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
   border: 1px solid #30363d;
 }
 
 .order-content h2 {
-  font-size: 24px;
+  font-size: 28px;
   color: #ffffff;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   text-align: center;
+  font-weight: 700;
 }
 
-.order-items {
-  margin-bottom: 24px;
-}
-
-.order-item {
-  display: flex;
-  gap: 16px;
-  padding: 16px;
-  background: #21262d;
-  border-radius: 12px;
-  margin-bottom: 12px;
-}
-
-.order-item img {
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.order-item-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.order-item-info h4 {
-  color: #ffffff;
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-
-.order-item-info span {
-  color: #8b949e;
-  font-size: 14px;
-}
-
-.item-total {
-  color: #ff6b6b !important;
-  font-weight: 600;
-}
-
-.order-summary {
+.order-section {
   margin-bottom: 24px;
   padding: 20px;
   background: #21262d;
   border-radius: 12px;
 }
 
+.order-section h3 {
+  color: #ffffff;
+  font-size: 18px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.order-section h3::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
+}
+
+/* 收货地址 */
+.order-address .address-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.address-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c9d1d9;
+}
+
+.address-label {
+  color: #8b949e;
+  font-size: 14px;
+  min-width: 80px;
+}
+
+/* 商品清单 */
+.order-header {
+  display: flex;
+  padding: 12px 16px;
+  background: #30363d;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #8b949e;
+  font-weight: 600;
+}
+
+.col-product {
+  flex: 2;
+}
+
+.col-price,
+.col-quantity,
+.col-total {
+  flex: 1;
+  text-align: center;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: #30363d;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  gap: 16px;
+}
+
+.item-product {
+  flex: 2;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.item-product img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item-details h4 {
+  color: #ffffff;
+  font-size: 15px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.item-category {
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.item-features {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.feature-tag {
+  background: #484f58;
+  color: #c9d1d9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.item-price,
+.item-quantity,
+.item-total {
+  flex: 1;
+  text-align: center;
+  color: #c9d1d9;
+  font-size: 14px;
+}
+
+.item-total {
+  color: #ff6b6b;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* 配送方式 */
+.delivery-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.delivery-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #30363d;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.delivery-option:hover {
+  background: #3d444d;
+}
+
+.delivery-option input:checked + .delivery-info {
+  border-color: #667eea;
+}
+
+.delivery-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.delivery-name {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.delivery-time,
+.delivery-fee {
+  color: #8b949e;
+  font-size: 13px;
+}
+
+/* 订单备注 */
+.order-remark {
+  position: relative;
+}
+
+.remark-input {
+  width: 100%;
+  background: #30363d;
+  border: 1px solid #484f58;
+  border-radius: 8px;
+  padding: 12px;
+  color: #c9d1d9;
+  font-size: 14px;
+  resize: none;
+  font-family: inherit;
+  transition: all 0.3s;
+}
+
+.remark-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.remark-input::placeholder {
+  color: #8b949e;
+}
+
+.char-count {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  color: #8b949e;
+  font-size: 12px;
+}
+
+/* 费用明细 */
 .summary-row {
   display: flex;
   justify-content: space-between;
   color: #c9d1d9;
   margin-bottom: 12px;
+  font-size: 14px;
 }
 
 .summary-row.total {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #30363d;
+  border-top: 1px solid #484f58;
   font-size: 18px;
   font-weight: 600;
   color: #ffffff;
 }
 
-.summary-row.total span:last-child {
+.summary-row.total .total-price {
   color: #ff6b6b;
   font-size: 24px;
+  font-weight: 700;
 }
 
-.order-payment {
-  margin-bottom: 24px;
+.free-shipping {
+  color: #3fb950;
 }
 
-.order-payment h4 {
-  color: #ffffff;
-  margin-bottom: 16px;
+.discount {
+  color: #3fb950;
 }
 
+/* 支付方式 */
 .payment-options {
   display: flex;
   flex-direction: column;
@@ -2457,38 +3316,512 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
-  background: #21262d;
+  padding: 16px;
+  background: #30363d;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s;
-  color: #c9d1d9;
+  border: 2px solid transparent;
 }
 
 .payment-option:hover {
-  background: #30363d;
+  background: #3d444d;
+}
+
+.payment-option.active {
+  border-color: #667eea;
+  background: #3d444d;
 }
 
 .payment-option input {
-  accent-color: #667eea;
+  display: none;
+}
+
+.payment-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.payment-icon {
+  font-size: 24px;
+}
+
+.payment-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payment-name {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.payment-desc {
+  color: #8b949e;
+  font-size: 13px;
+}
+
+/* 底部操作 */
+.order-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 0 0;
+  border-top: 1px solid #30363d;
+  flex-wrap: wrap;
+}
+
+.footer-total {
+  font-size: 16px;
+  color: #c9d1d9;
+  flex-shrink: 0;
+}
+
+.total-amount {
+  font-size: 28px;
+  color: #ff6b6b;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.cancel-pay-btn {
+  padding: 16px 24px;
+  background: #30363d;
+  color: #c9d1d9;
+  border: 1px solid #484f58;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.cancel-pay-btn:hover {
+  background: #3d444d;
+  color: #ffffff;
+  border-color: #8b949e;
 }
 
 .pay-btn {
-  width: 100%;
-  padding: 18px;
+  padding: 16px 24px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 12px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  white-space: nowrap;
 }
 
 .pay-btn:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+}
+
+/* 地址管理弹窗 */
+.address-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1003;
+  overflow-y: auto;
+  padding: 20px;
+  pointer-events: auto;
+}
+
+.address-modal-content {
+  background: #161b22;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #30363d;
+  position: relative;
+  pointer-events: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.modal-header h2 {
+  font-size: 24px;
+  color: #ffffff;
+  margin: 0;
+  font-weight: 700;
+}
+
+.close-modal {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-modal:hover {
+  background: #30363d;
+  color: #ffffff;
+}
+
+.close-modal svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* 地址列表 */
+.address-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: auto;
+}
+
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  pointer-events: auto;
+  width: 100%;
+}
+
+.address-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: #21262d;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.address-item-card.active {
+  border-color: #667eea;
+  background: #30363d;
+}
+
+.address-item-card:hover {
+  border-color: #484f58;
+}
+
+.address-card-info {
+  flex: 1;
+}
+
+.address-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.address-name {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.address-phone {
+  color: #8b949e;
+  font-size: 14px;
+}
+
+.address-card-detail {
+  color: #c9d1d9;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.address-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  background: #30363d;
+  border: 1px solid #484f58;
+  color: #c9d1d9;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.action-btn:hover {
+  background: #3d444d;
+  color: #ffffff;
+}
+
+.action-btn.danger:hover {
+  background: #da3633;
+  border-color: #da3633;
+  color: #ffffff;
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.add-address-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer !important;
+  transition: all 0.3s;
+  position: relative;
+  z-index: 100;
+  pointer-events: auto !important;
+  margin-top: 8px;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.add-address-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+}
+
+.add-address-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* 地址表单 */
+.address-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  color: #c9d1d9;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: #30363d;
+  border: 1px solid #484f58;
+  border-radius: 8px;
+  padding: 12px;
+  color: #c9d1d9;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.checkbox-group {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c9d1d9;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #667eea;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancel-btn,
+.save-btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cancel-btn {
+  background: #30363d;
+  color: #c9d1d9;
+  border: 1px solid #484f58;
+}
+
+.cancel-btn:hover {
+  background: #3d444d;
+  color: #ffffff;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.save-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+}
+
+/* 收货地址编辑按钮 */
+.edit-address-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.edit-address-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
+}
+
+.edit-address-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 默认地址标签 */
+.default-badge {
+  background: linear-gradient(135deg, #3fb950 0%, #2ea043 100%);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 地址为空状态 */
+.address-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #8b949e;
+}
+
+.address-empty span {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.address-empty p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 收货地址部分的头部 */
+.order-address .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.order-address .section-header h3 {
+  margin: 0;
 }
 
 /* 购物车动画 */

@@ -106,12 +106,19 @@
         📝 权限申请
         <span class="badge" v-if="stats.pendingRequests > 0">{{ stats.pendingRequests }}</span>
       </button>
-      <button 
-        :class="['tab-btn', { active: activeTab === 'service' }]" 
+      <button
+        :class="['tab-btn', { active: activeTab === 'service' }]"
         @click="activeTab = 'service'"
       >
         💬 客服消息
         <span class="badge" v-if="unreadMessages > 0">{{ unreadMessages }}</span>
+      </button>
+      <button
+        :class="['tab-btn', { active: activeTab === 'messages' }]"
+        @click="activeTab = 'messages'"
+      >
+        📧 留言管理
+        <span class="badge" v-if="messageStats.pendingMessages > 0">{{ messageStats.pendingMessages }}</span>
       </button>
     </div>
 
@@ -636,6 +643,102 @@
       </div>
     </div>
 
+    <!-- 留言管理 -->
+    <div class="content-card" v-if="activeTab === 'messages'">
+      <div class="card-header">
+        <h3>留言列表</h3>
+        <div class="header-actions">
+          <select v-model="messageFilter.status" class="filter-select" @change="loadMessages">
+            <option value="">全部状态</option>
+            <option value="0">待处理</option>
+            <option value="1">已处理</option>
+          </select>
+          <input
+            type="text"
+            v-model="messageFilter.keyword"
+            placeholder="搜索姓名/邮箱/内容..."
+            class="search-input"
+            @input="loadMessages"
+          />
+          <button class="refresh-btn" @click="loadContactMessages">🔄 刷新</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>姓名</th>
+              <th>邮箱</th>
+              <th>电话</th>
+              <th>类型</th>
+              <th>留言内容</th>
+              <th>状态</th>
+              <th>提交时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="msg in messages" :key="msg.id">
+              <td>{{ msg.id }}</td>
+              <td>{{ msg.name }}</td>
+              <td>{{ msg.email || '-' }}</td>
+              <td>{{ msg.phone || '-' }}</td>
+              <td>{{ getMessageTypeText(msg.type) }}</td>
+              <td class="message-content">{{ msg.message }}</td>
+              <td>
+                <span :class="['status-badge', msg.status === 0 ? 'pending' : 'processed']">
+                  {{ msg.status === 0 ? '待处理' : '已处理' }}
+                </span>
+              </td>
+              <td>{{ formatDateTime(msg.createTime) }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="action-btn view" @click="viewMessageDetail(msg)" title="查看详情">👁️</button>
+                  <button
+                    class="action-btn reply"
+                    @click="showReplyModal(msg)"
+                    title="回复"
+                    v-if="msg.status === 0"
+                  >
+                    💬
+                  </button>
+                  <button
+                    class="action-btn delete"
+                    @click="deleteMessage(msg)"
+                    title="删除"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="messages.length === 0">
+              <td colspan="9" class="empty-row">暂无留言数据</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- 分页 -->
+      <div class="pagination">
+        <button
+          class="page-btn"
+          :disabled="messagePagination.page === 1"
+          @click="changeMessagePage(messagePagination.page - 1)"
+        >
+          上一页
+        </button>
+        <span class="page-info">第 {{ messagePagination.page }} 页 / 共 {{ messagePagination.pages }} 页</span>
+        <button
+          class="page-btn"
+          :disabled="messagePagination.page >= messagePagination.pages"
+          @click="changeMessagePage(messagePagination.page + 1)"
+        >
+          下一页
+        </button>
+      </div>
+    </div>
+
     <!-- 商品添加/编辑弹窗 -->
     <div class="modal-overlay" v-if="showProductModal" @click.self="closeProductModal">
       <div class="modal-content product-modal">
@@ -737,6 +840,89 @@
         <div class="modal-footer">
           <button class="cancel-btn" @click="showStockModal = false">取消</button>
           <button class="confirm-btn" @click="confirmAddStock">确认补货</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 留言详情弹窗 -->
+    <div class="modal-overlay" v-if="showMessageDetailModal" @click.self="showMessageDetailModal = false">
+      <div class="modal-content message-detail-modal">
+        <div class="modal-header">
+          <h3>留言详情</h3>
+          <button class="modal-close" @click="showMessageDetailModal = false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-section">
+            <h4>留言信息</h4>
+            <div class="detail-row">
+              <span class="detail-label">姓名：</span>
+              <span class="detail-value">{{ currentMessage?.name }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">邮箱：</span>
+              <span class="detail-value">{{ currentMessage?.email || '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">电话：</span>
+              <span class="detail-value">{{ currentMessage?.phone || '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">类型：</span>
+              <span class="detail-value">{{ getMessageTypeText(currentMessage?.type) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">状态：</span>
+              <span :class="['status-badge', currentMessage?.status === 0 ? 'pending' : 'processed']">
+                {{ currentMessage?.status === 0 ? '待处理' : '已处理' }}
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">提交时间：</span>
+              <span class="detail-value">{{ formatDateTime(currentMessage?.createTime) }}</span>
+            </div>
+          </div>
+          <div class="detail-section">
+            <h4>留言内容</h4>
+            <div class="message-content-full">{{ currentMessage?.message }}</div>
+          </div>
+          <div class="detail-section" v-if="currentMessage?.reply">
+            <h4>回复内容</h4>
+            <div class="reply-content-full">{{ currentMessage?.reply }}</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" @click="showMessageDetailModal = false">关闭</button>
+          <button
+            class="confirm-btn"
+            @click="showReplyModal(currentMessage)"
+            v-if="currentMessage?.status === 0"
+          >
+            回复
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 回复留言弹窗 -->
+    <div class="modal-overlay" v-if="showReplyModalVisible" @click.self="showReplyModalVisible = false">
+      <div class="modal-content reply-modal">
+        <div class="modal-header">
+          <h3>回复留言</h3>
+          <button class="modal-close" @click="showReplyModalVisible = false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="message-preview">
+            <div class="preview-label">原留言：</div>
+            <div class="preview-content">{{ currentMessage?.message }}</div>
+          </div>
+          <div class="form-group">
+            <label>回复内容</label>
+            <textarea v-model="replyContent" placeholder="请输入回复内容..." rows="5"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" @click="showReplyModalVisible = false">取消</button>
+          <button class="confirm-btn" @click="submitReply">发送回复</button>
         </div>
       </div>
     </div>
@@ -866,7 +1052,11 @@ import {
   sendCustomerReply,
   getOrders,
   getOrderDetail,
-  updateOrderStatus as updateOrderStatusApi
+  updateOrderStatus as updateOrderStatusApi,
+  getContactMessages,
+  updateMessageStatus,
+  replyMessage as replyMessageApi,
+  deleteMessage as deleteMessageApi
 } from '../api'
 import { useWebSocket } from '../composables/useWebSocket'
 
@@ -966,6 +1156,18 @@ export default {
     const showStockModal = ref(false)
     const stockProduct = ref(null)
     const addStockNum = ref(50)
+
+    // 留言管理相关
+    const messages = ref([])
+    const messageFilter = reactive({ status: '', keyword: '' })
+    const messagePagination = reactive({ page: 1, size: 10, pages: 1, total: 0 })
+    const messageStats = reactive({
+      pendingMessages: 0
+    })
+    const showMessageDetailModal = ref(false)
+    const showReplyModalVisible = ref(false)
+    const currentMessage = ref(null)
+    const replyContent = ref('')
     
     // 客服消息相关
     const conversations = ref([])  // 对话列表（按用户分组）
@@ -974,7 +1176,6 @@ export default {
     const detailContentRef = ref(null)  // 消息内容区域引用
     const selectedUsername = ref(null)
     const selectedUserAvatar = ref('')  // 当前选中用户的头像
-    const replyContent = ref('')
     const unreadMessages = computed(() => conversations.value.reduce((sum, c) => sum + c.unreadCount, 0))
     const lowStockCount = computed(() => lowStockProducts.value.length)
     
@@ -1019,6 +1220,8 @@ export default {
         orderPagination.pages = data?.pages || 1
         orderPagination.total = data?.total || 0
       }
+      // 同时刷新订单统计数据
+      await loadOrderStats()
     }
 
     // 切换订单页码
@@ -1084,7 +1287,83 @@ export default {
       if (!date) return '-'
       return new Date(date).toLocaleString('zh-CN')
     }
-    
+
+    // 留言管理相关函数
+    const loadContactMessages = async () => {
+      const result = await getContactMessages(messagePagination.page, messagePagination.size, messageFilter.keyword, messageFilter.status !== '' ? parseInt(messageFilter.status) : null)
+      if (result.success) {
+        const data = result.data || result
+        messages.value = data?.records || []
+        messagePagination.pages = data?.pages || 1
+        messagePagination.total = data?.total || 0
+
+        // 统计待处理留言
+        const allMessages = await getContactMessages(1, 1000, '', 0)
+        if (allMessages.success) {
+          messageStats.pendingMessages = allMessages.data?.total || 0
+        }
+      }
+    }
+
+    const changeMessagePage = (page) => {
+      if (page < 1 || page > messagePagination.pages) return
+      messagePagination.page = page
+      loadContactMessages()
+    }
+
+    const getMessageTypeText = (type) => {
+      const typeMap = {
+        'product': '产品咨询',
+        'order': '订单问题',
+        'aftersale': '售后服务',
+        'cooperation': '商务合作',
+        'other': '其他'
+      }
+      return typeMap[type] || type
+    }
+
+    const viewMessageDetail = (msg) => {
+      currentMessage.value = msg
+      showMessageDetailModal.value = true
+    }
+
+    const showReplyModal = (msg) => {
+      currentMessage.value = msg
+      replyContent.value = msg.reply || ''
+      showReplyModalVisible.value = true
+    }
+
+    const submitReply = async () => {
+      if (!replyContent.value.trim()) {
+        alert('请输入回复内容')
+        return
+      }
+
+      const result = await replyMessageApi(currentMessage.value.id, replyContent.value)
+      if (result.success) {
+        alert('回复成功')
+        showReplyModalVisible.value = false
+        showMessageDetailModal.value = false
+        loadContactMessages()
+      } else {
+        alert('回复失败：' + (result.message || '未知错误'))
+      }
+    }
+
+    const deleteMessage = async (msg) => {
+      if (!confirm('确定要删除这条留言吗？')) {
+        return
+      }
+
+      const result = await deleteMessageApi(msg.id)
+      if (result.success) {
+        alert('删除成功')
+        loadContactMessages()
+      } else {
+        alert('删除失败：' + (result.message || '未知错误'))
+      }
+    }
+
     // 加载用户列表
     const loadUsers = async () => {
       const result = await getAdminUsers()
@@ -1623,6 +1902,7 @@ export default {
       loadMessages()
       loadOrders()
       loadOrderStats()
+      loadContactMessages()
       
       // 监听WebSocket通知
       window.addEventListener('websocket-notification', handleWebSocketNotification)
@@ -1731,7 +2011,23 @@ export default {
       unreadMessages,
       loadConversation,
       sendReply,
-      loadMessages
+      loadMessages,
+
+      // 留言管理
+      messages,
+      messageFilter,
+      messagePagination,
+      messageStats,
+      showMessageDetailModal,
+      showReplyModalVisible,
+      currentMessage,
+      loadContactMessages,
+      changeMessagePage,
+      getMessageTypeText,
+      viewMessageDetail,
+      showReplyModal,
+      submitReply,
+      deleteMessage
     }
   }
 }
@@ -3216,5 +3512,68 @@ export default {
   background: rgba(255, 107, 107, 0.9);
   color: white;
   transform: scale(1.1);
+}
+
+/* 留言管理相关样式 */
+.message-content {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-content-full {
+  background: #21262d;
+  padding: 16px;
+  border-radius: 8px;
+  color: #c9d1d9;
+  line-height: 1.6;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.reply-content-full {
+  background: rgba(102, 126, 234, 0.1);
+  padding: 16px;
+  border-radius: 8px;
+  color: #c9d1d9;
+  line-height: 1.6;
+  border-left: 4px solid #667eea;
+}
+
+.status-badge.pending {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.status-badge.processed {
+  background: rgba(63, 185, 80, 0.2);
+  color: #3fb950;
+}
+
+.message-detail-modal {
+  max-width: 700px;
+}
+
+.reply-modal {
+  max-width: 600px;
+}
+
+.message-preview {
+  margin-bottom: 20px;
+}
+
+.preview-label {
+  color: #8b949e;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.preview-content {
+  background: #21262d;
+  padding: 12px;
+  border-radius: 8px;
+  color: #c9d1d9;
+  line-height: 1.6;
 }
 </style>

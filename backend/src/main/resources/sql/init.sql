@@ -191,6 +191,24 @@ CREATE TABLE IF NOT EXISTS customer_messages (
     INDEX idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 联系留言表
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    name VARCHAR(100) NOT NULL COMMENT '留言人姓名',
+    email VARCHAR(255) COMMENT '电子邮箱',
+    phone VARCHAR(20) COMMENT '联系电话',
+    type VARCHAR(50) COMMENT '留言类型：product-产品咨询，order-订单问题，aftersale-售后服务，cooperation-商务合作，other-其他',
+    message TEXT NOT NULL COMMENT '留言内容',
+    reply TEXT COMMENT '回复内容',
+    status TINYINT DEFAULT 0 COMMENT '状态：0-待处理，1-已处理',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
+    INDEX idx_status (status),
+    INDEX idx_type (type),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='联系留言表';
+
 -- ============================================
 -- 初始化数据
 -- ============================================

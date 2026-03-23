@@ -98,6 +98,10 @@
                   </div>
                   
                   <div class="dropdown-divider"></div>
+                  <router-link to="/orders" class="dropdown-item" @click="showDropdown = false">
+                    我的订单
+                  </router-link>
+                  <div class="dropdown-divider"></div>
                   <router-link to="/settings" class="dropdown-item" @click="showDropdown = false">
                     个人设置
                   </router-link>

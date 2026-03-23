@@ -6,6 +6,7 @@ import Products from '../views/Products.vue'
 import About from '../views/About.vue'
 import Contact from '../views/Contact.vue'
 import Admin from '../views/Admin.vue'
+import UserOrders from '../views/UserOrders.vue'
 import { userStore } from '../stores/userStore'
 
 const routes = [
@@ -51,6 +52,12 @@ const routes = [
     name: 'Admin',
     component: Admin,
     meta: { title: '管理端', requiresAdmin: true }
+  },
+  {
+    path: '/orders',
+    name: 'UserOrders',
+    component: UserOrders,
+    meta: { title: '我的订单', requiresAuth: true }
   }
 ]
 

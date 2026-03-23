@@ -509,6 +509,65 @@ export const sendCustomerReply = async (data) => {
 
 // ===== 订单管理 API =====
 
+// 创建订单（待支付状态）
+export const createOrder = async (orderData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(orderData),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('创建订单失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+};
+
+// 完成支付
+export const completePayment = async (orderId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/pay`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('完成支付失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+};
+
+// 取消订单
+export const cancelOrder = async (orderId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('取消订单失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+};
+
+// 获取用户订单列表
+export const getUserOrders = async (username, page = 1, size = 10, status = '') => {
+  try {
+    let url = `${API_BASE_URL}/orders/user/${username}?page=${page}&size=${size}`
+    if (status) url += `&status=${encodeURIComponent(status)}`
+    
+    const response = await fetch(url, {
+      headers: getAuthHeaders()
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('获取用户订单失败:', error);
+    return { success: false, message: '服务器错误', data: null };
+  }
+};
+
 // 获取订单列表
 export const getOrders = async (page = 1, size = 10, keyword = '', status = '') => {
   try {
@@ -578,6 +637,78 @@ export const addProductReview = async (productId, username, rating, content) => 
     return await response.json();
   } catch (error) {
     console.error('添加商品评论失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+}
+
+// 留言管理API
+export const submitContactMessage = async (messageData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/contact-messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(messageData),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('提交留言失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+}
+
+export const getContactMessages = async (page = 1, size = 10, keyword = '', status = null) => {
+  try {
+    let url = `${API_BASE_URL}/contact-messages?page=${page}&size=${size}`
+    if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`
+    if (status !== null) url += `&status=${status}`
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('获取留言列表失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+}
+
+export const updateMessageStatus = async (id, status) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/contact-messages/${id}/status?status=${status}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('更新留言状态失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+}
+
+export const replyMessage = async (id, reply) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/contact-messages/${id}/reply`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ reply }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('回复留言失败:', error);
+    return { success: false, message: '服务器错误' };
+  }
+}
+
+export const deleteMessage = async (id) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/contact-messages/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('删除留言失败:', error);
     return { success: false, message: '服务器错误' };
   }
 };

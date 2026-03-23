@@ -11,13 +11,16 @@
     <!-- 联系方式 -->
     <section class="contact-section">
       <div class="contact-grid">
-        <div class="contact-card" v-for="(contact, index) in contacts" :key="index">
+        <div class="contact-card" v-for="(contact, index) in contacts" :key="index" :class="{ clickable: contact.isService }" @click="contact.isService && openService()">
           <div class="contact-icon">{{ contact.icon }}</div>
           <h3>{{ contact.title }}</h3>
           <p>{{ contact.content }}</p>
         </div>
       </div>
     </section>
+
+    <!-- 客服组件 -->
+    <CustomerService ref="customerServiceRef" />
 
     <!-- 二维码区域 -->
     <section class="qr-section">
@@ -110,20 +113,30 @@
 <script>
 import { ref } from 'vue'
 import WebsiteLayout from '../components/WebsiteLayout.vue'
+import CustomerService from '../components/CustomerService.vue'
+import { submitContactMessage } from '../api'
 
 export default {
   name: 'Contact',
   components: {
-    WebsiteLayout
+    WebsiteLayout,
+    CustomerService
   },
   setup() {
     const faqOpen = ref(null)
-    
+    const customerServiceRef = ref(null)
+
+    const openService = () => {
+      if (customerServiceRef.value) {
+        customerServiceRef.value.toggleChat()
+      }
+    }
+
     const contacts = [
       { icon: '📞', title: '客服热线', content: '400-888-8888' },
       { icon: '⏰', title: '服务时间', content: '周一至周日 9:00-21:00' },
       { icon: '📧', title: '商务邮箱', content: 'business@xinghuo.com' },
-      { icon: '💬', title: '在线客服', content: '点击右侧图标在线咨询' }
+      { icon: '💬', title: '在线客服', content: '点击此处在线咨询', isService: true }
     ]
 
     const qrcodes = [
@@ -168,18 +181,38 @@ export default {
       faqOpen.value = faqOpen.value === index ? null : index
     }
 
-    const submitMessage = () => {
+    const submitMessage = async () => {
       if (!formData.value.name || !formData.value.message) {
         alert('请填写姓名和留言内容')
         return
       }
-      alert('感谢您的留言！我们会尽快回复您。')
-      formData.value = {
-        name: '',
-        email: '',
-        phone: '',
-        type: '',
-        message: ''
+
+      try {
+        const result = await fetch(`${window.API_BASE_URL || 'http://localhost:8080/api'}/contact-messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData.value)
+        })
+
+        const data = await result.json()
+
+        if (data.success) {
+          alert('感谢您的留言！我们会尽快回复您。')
+          formData.value = {
+            name: '',
+            email: '',
+            phone: '',
+            type: '',
+            message: ''
+          }
+        } else {
+          alert('提交失败：' + (data.message || '未知错误'))
+        }
+      } catch (error) {
+        console.error('提交留言失败:', error)
+        alert('提交失败，请稍后重试')
       }
     }
 
@@ -190,7 +223,9 @@ export default {
       formData,
       faqOpen,
       toggleFaq,
-      submitMessage
+      submitMessage,
+      customerServiceRef,
+      openService
     }
   }
 }
@@ -276,6 +311,16 @@ export default {
   padding: 40px 24px;
   text-align: center;
   transition: all 0.3s ease;
+}
+
+.contact-card.clickable {
+  cursor: pointer;
+}
+
+.contact-card.clickable:hover {
+  transform: translateY(-8px);
+  border-color: #667eea;
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
 }
 
 .contact-card:hover {

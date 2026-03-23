@@ -3,46 +3,52 @@ package com.starfire.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.List;
 
 @TableName("orders")
 public class Order {
     @TableId(type = IdType.AUTO)
     private Long id;
-    
+
     private String orderNo;
-    
+
     private Long userId;
-    
+
     private String username;
-    
+
     private String receiverName;
-    
+
     private String receiverPhone;
-    
+
     private String receiverAddress;
-    
+
     private BigDecimal totalAmount;
-    
+
     private BigDecimal discountAmount;
-    
+
     private BigDecimal payAmount;
-    
+
     private String payMethod;
-    
+
     private LocalDateTime payTime;
-    
+
     private String status;
-    
+
     private String remark;
-    
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
-    
+
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
-    
+
     @TableLogic
     private Integer deleted;
+
+    // 订单项列表（不映射到数据库字段）
+    @TableField(exist = false)
+    private List<OrderItem> items;
 
     // Getters and Setters
     public Long getId() {
@@ -176,8 +182,16 @@ public class Order {
     public Integer getDeleted() {
         return deleted;
     }
-    
+
     public void setDeleted(Integer deleted) {
         this.deleted = deleted;
+    }
+
+    public List<OrderItem> getItems() {
+        return items;
+    }
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
     }
 }

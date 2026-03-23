@@ -150,7 +150,7 @@
         <section class="brand-story">
           <!-- 世界地图 Canvas 背景 -->
           <div class="map-container" ref="container">
-            <canvas ref="mapCanvas" @click="handleWaveClick" @mousemove="handleMouseMove" @mouseleave="handleMouseLeave"></canvas>
+            <canvas ref="mapCanvas" @mousemove="handleMouseMove" @mouseleave="handleMouseLeave"></canvas>
           </div>
 
           <!-- 欢迎语、介绍和搜索框 -->
@@ -737,8 +737,6 @@ export default {
     let lastMouseX = -1000
     let lastMouseY = -1000
     let mouseSpeed = 0
-    let mouseTrailParticles = []
-    let lastTrailTime = 0
 
     // 初始化像素粒子
         const initWaveParticles = () => {
@@ -797,15 +795,15 @@ export default {
 
                 phase: 'appearing',
 
-                phaseTimer: Math.random() * 60,
+                phaseTimer: Math.random() * 200, // 增加随机范围，避免同步
 
-                floatDuration: 40 + Math.random() * 120, // 生命周期变化更大
+                floatDuration: 60 + Math.random() * 100, // 减少变化范围
 
                 maxAlpha: 0.5 + Math.random() * 0.5, // 透明度变化更大
 
                 oscillationPhase: Math.random() * Math.PI * 2,
 
-                oscillationSpeed: 0.04 + Math.random() * 0.12, // 摇摆速度变化更大
+                oscillationSpeed: 0.02, // 统一摇摆速度，让运动更协调
 
                 type: 'flame-pixel',
 
@@ -849,9 +847,9 @@ export default {
 
               phase: 'appearing',
 
-              phaseTimer: Math.random() * 60,
+              phaseTimer: Math.random() * 200, // 增加随机范围
 
-              floatDuration: 30 + Math.random() * 100, // 生命周期变化
+              floatDuration: 70 + Math.random() * 80, // 生命周期变化
 
               maxAlpha: 0.6 + Math.random() * 0.4,
 
@@ -895,9 +893,9 @@ export default {
 
               phase: 'appearing',
 
-              phaseTimer: Math.random() * 60,
+              phaseTimer: Math.random() * 300, // 增加随机范围
 
-              floatDuration: 80 + Math.random() * 200, // 生命周期变化很大
+              floatDuration: 120 + Math.random() * 100, // 生命周期变化
 
               maxAlpha: 0.2 + Math.random() * 0.4,
 
@@ -925,41 +923,11 @@ export default {
       mouseX = e.clientX - rect.left
       mouseY = e.clientY - rect.top
 
-      // 计算鼠标速度
+      // 计算鼠标速度（用于加速效果）
       if (lastMouseX > -500) {
         const dx = mouseX - lastMouseX
         const dy = mouseY - lastMouseY
         mouseSpeed = Math.sqrt(dx * dx + dy * dy)
-      }
-
-      // 根据鼠标速度生成尾迹火焰
-      const currentTime = Date.now()
-      if (currentTime - lastTrailTime > 30) { // 每30ms生成一次
-        const trailIntensity = Math.min(mouseSpeed / 50, 2) // 速度越快，火焰越强
-
-        // 在鼠标位置生成尾迹火焰粒子
-        for (let i = 0; i < Math.ceil(trailIntensity * 3); i++) {
-          const angle = Math.random() * Math.PI * 2
-          const speed = 0.5 + Math.random() * 1.5
-
-          mouseTrailParticles.push({
-            x: mouseX + (Math.random() - 0.5) * 20,
-            y: mouseY + (Math.random() - 0.5) * 20,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 0.5,
-            width: 2 + Math.random() * 3,
-            height: 2 + Math.random() * 4,
-            alpha: 1,
-            phase: 'appearing',
-            phaseTimer: 0,
-            floatDuration: 20 + Math.random() * 30,
-            maxAlpha: 0.8 + Math.random() * 0.2,
-            temperature: 0.6 + Math.random() * 0.4,
-            type: 'mouse-trail'
-          })
-        }
-
-        lastTrailTime = currentTime
       }
     }
 
@@ -994,48 +962,6 @@ export default {
       bottomGlow.addColorStop(1, 'rgba(255, 200, 0, 0.12)')
       waveCtx.fillStyle = bottomGlow
       waveCtx.fillRect(0, height - glowHeight, width, glowHeight)
-      
-      // 更新并绘制鼠标尾迹粒子
-      for (let i = mouseTrailParticles.length - 1; i >= 0; i--) {
-        const p = mouseTrailParticles[i]
-        p.phaseTimer++
-
-        if (p.phase === 'appearing') {
-          p.alpha = Math.min(p.alpha + 0.05, p.maxAlpha)
-          if (p.alpha >= p.maxAlpha) {
-            p.phase = 'floating'
-            p.phaseTimer = 0
-          }
-        } else if (p.phase === 'floating') {
-          p.x += p.vx
-          p.y += p.vy
-          p.alpha -= 0.02
-          p.vy += 0.01
-
-          if (p.alpha <= 0 || p.phaseTimer > p.floatDuration) {
-            p.phase = 'disappearing'
-            p.phaseTimer = 0
-          }
-        } else if (p.phase === 'disappearing') {
-          p.alpha = Math.max(p.alpha - 0.05, 0)
-          if (p.alpha <= 0) {
-            mouseTrailParticles.splice(i, 1)
-            continue
-          }
-        }
-
-        // 绘制鼠标尾迹粒子
-        const hue = 20 + p.temperature * 20
-        const lightness = 50 + p.temperature * 20
-        const color = `hsla(${hue}, 100%, ${lightness}%, ${p.alpha})`
-        const glowColor = `hsla(${hue}, 100%, 70%, ${p.alpha * 0.8})`
-
-        waveCtx.fillStyle = color
-        waveCtx.shadowBlur = 15
-        waveCtx.shadowColor = glowColor
-        waveCtx.fillRect(p.x - p.width/2, p.y - p.height/2, p.width, p.height)
-        waveCtx.shadowBlur = 0
-      }
 
       // 更新并绘制粒子
       for (let i = waveParticles.length - 1; i >= 0; i--) {
@@ -1047,7 +973,7 @@ export default {
         // 像素火焰粒子
         if (p.type === 'flame-pixel') {
           if (p.phase === 'appearing') {
-            p.alpha = Math.min(p.alpha + 0.03, p.maxAlpha)
+            p.alpha = Math.min(p.alpha + 0.02, p.maxAlpha)
             if (p.alpha >= p.maxAlpha) {
               p.phase = 'floating'
               p.phaseTimer = 0
@@ -1056,32 +982,31 @@ export default {
             // 移动粒子
             p.x += p.vx
             p.y += p.vy
-            
-            // 左右摇摆
-            const oscillation = Math.sin(p.phaseTimer * p.oscillationSpeed + p.oscillationPhase) * 0.8
+
+            // 左右摇摆 - 使用更平滑的摇摆
+            const oscillation = Math.sin(p.phaseTimer * 0.02 + p.oscillationPhase) * 0.5
             p.x += oscillation
-            
-            // 随着高度增加，速度衰减
-            const heightFromBottom = Math.max(0, height - p.y)
-            p.vx *= 0.99
-            
+
+            // 减缓速度衰减，保持运动流畅
+            p.vx *= 0.995
+
             // 边界检查
             if (p.x < -20 || p.x > width + 20 || p.y < -80 || p.y > height + 20) {
               p.phase = 'disappearing'
               p.phaseTimer = 0
             }
-            
+
             if (p.phaseTimer > p.floatDuration) {
               p.phase = 'disappearing'
               p.phaseTimer = 0
             }
           } else if (p.phase === 'disappearing') {
-            // 根据粒子层和其他属性调整消失速度
-            const fadeSpeed = 0.02 + (p.layer || 0) * 0.01 + Math.random() * 0.03
+            // 平滑消失
+            const fadeSpeed = 0.015 + (p.layer || 0) * 0.005
             p.alpha = Math.max(p.alpha - fadeSpeed, 0)
             if (p.alpha <= 0) {
               waveParticles.splice(i, 1)
-              // 重新创建像素粒子
+              // 重新创建像素粒子，增加初始相位随机范围
               const pixel = {
                 x: p.baseX,
                 y: height - Math.random() * 20,
@@ -1093,11 +1018,11 @@ export default {
                 vy: -1.5 - Math.random() * 3.5,
                 alpha: 0,
                 phase: 'appearing',
-                phaseTimer: Math.random() * 60,
-                floatDuration: 40 + Math.random() * 120,
+                phaseTimer: Math.random() * 200, // 增加随机范围
+                floatDuration: 60 + Math.random() * 100, // 减少变化范围
                 maxAlpha: 0.5 + Math.random() * 0.5,
                 oscillationPhase: Math.random() * Math.PI * 2,
-                oscillationSpeed: 0.04 + Math.random() * 0.12,
+                oscillationSpeed: 0.02, // 统一摇摆速度
                 type: 'flame-pixel',
                 temperature: 0.3 + Math.random() * 0.7,
                 layer: p.layer,
@@ -1108,7 +1033,7 @@ export default {
             }
           }
           
-          // 鼠标交互：排斥 + 激活火焰效果
+          // 鼠标交互：激活火焰效果
           if (mouseX > -500) {
             const dx = p.x - mouseX
             const dy = p.y - mouseY
@@ -1126,13 +1051,6 @@ export default {
 
               // 增加垂直速度（火焰上升更快）
               if (distance < 80) {
-                const force = (80 - distance) / 80
-                const angle = Math.atan2(dy, dx)
-
-                // 排斥效果
-                p.x += Math.cos(angle) * force * 3
-                p.y += Math.sin(angle) * force * 3
-
                 // 速度增强
                 p.vy -= activationLevel * 0.3
                 p.vx += (Math.random() - 0.5) * activationLevel * 0.5
@@ -1143,7 +1061,7 @@ export default {
         // 火星粒子
         else if (p.type === 'ember') {
           if (p.phase === 'appearing') {
-            p.alpha = Math.min(p.alpha + 0.03, p.maxAlpha)
+            p.alpha = Math.min(p.alpha + 0.02, p.maxAlpha)
             if (p.alpha >= p.maxAlpha) {
               p.phase = 'floating'
               p.phaseTimer = 0
@@ -1152,26 +1070,26 @@ export default {
             // 移动粒子
             p.x += p.vx
             p.y += p.vy
-            p.vy += 0.02 // 重力
-            
+            p.vy += 0.015 // 减小重力，让运动更平滑
+
             // 更新拖尾
             p.trail.unshift({ x: p.x, y: p.y, alpha: p.alpha })
             if (p.trail.length > p.trailLength) {
               p.trail.pop()
             }
-            
+
             // 边界检查
             if (p.x < -30 || p.x > width + 30 || p.y < -80 || p.y > height + 30) {
               p.phase = 'disappearing'
               p.phaseTimer = 0
             }
-            
+
             if (p.phaseTimer > p.floatDuration) {
               p.phase = 'disappearing'
               p.phaseTimer = 0
             }
           } else if (p.phase === 'disappearing') {
-            const fadeSpeed = 0.03 + Math.random() * 0.04
+            const fadeSpeed = 0.02
             p.alpha = Math.max(p.alpha - fadeSpeed, 0)
             if (p.alpha <= 0) {
               waveParticles.splice(i, 1)
@@ -1184,8 +1102,8 @@ export default {
                 vy: -2 - Math.random() * 4,
                 alpha: 0,
                 phase: 'appearing',
-                phaseTimer: Math.random() * 60,
-                floatDuration: 50 + Math.random() * 80,
+                phaseTimer: Math.random() * 200, // 增加随机范围
+                floatDuration: 70 + Math.random() * 80,
                 maxAlpha: 0.8 + Math.random() * 0.2,
                 trail: [],
                 trailLength: 4 + Math.floor(Math.random() * 4),
@@ -1200,7 +1118,7 @@ export default {
         // 漂浮余烬
         else if (p.type === 'floating') {
           if (p.phase === 'appearing') {
-            p.alpha = Math.min(p.alpha + 0.01, p.maxAlpha)
+            p.alpha = Math.min(p.alpha + 0.008, p.maxAlpha)
             if (p.alpha >= p.maxAlpha) {
               p.phase = 'floating'
               p.phaseTimer = 0
@@ -1208,18 +1126,18 @@ export default {
           } else if (p.phase === 'floating') {
             p.x += p.vx
             p.y += p.vy
-            
+
             if (p.x < -30 || p.x > width + 30 || p.y < -80 || p.y > height + 30) {
               p.phase = 'disappearing'
               p.phaseTimer = 0
             }
-            
+
             if (p.phaseTimer > p.floatDuration) {
               p.phase = 'disappearing'
               p.phaseTimer = 0
             }
           } else if (p.phase === 'disappearing') {
-            const fadeSpeed = 0.01 + Math.random() * 0.03
+            const fadeSpeed = 0.008
             p.alpha = Math.max(p.alpha - fadeSpeed, 0)
             if (p.alpha <= 0) {
               waveParticles.splice(i, 1)
@@ -1232,8 +1150,8 @@ export default {
                 vy: -0.5 - Math.random() * 1,
                 alpha: 0,
                 phase: 'appearing',
-                phaseTimer: Math.random() * 60,
-                floatDuration: 100 + Math.random() * 150,
+                phaseTimer: Math.random() * 300, // 增加随机范围
+                floatDuration: 120 + Math.random() * 100,
                 maxAlpha: 0.3 + Math.random() * 0.3,
                 type: 'floating',
                 temperature: 0.2 + Math.random() * 0.3
@@ -1334,69 +1252,9 @@ export default {
       animateWave()
     }
 
-    // 点击交互：创建火焰爆发效果
+    // 点击交互：已禁用火焰爆发效果
     const handleWaveClick = (e) => {
-      const rect = mapCanvas.value.getBoundingClientRect()
-      const clickX = e.clientX - rect.left
-      const clickY = e.clientY - rect.top
-      const width = mapCanvas.value.width
-      const height = mapCanvas.value.height
-      
-      // 在点击位置创建像素火焰爆发 - 增加粒子数量
-      const burstRadius = 80
-      for (let angle = 0; angle < Math.PI * 2; angle += 0.15) {
-        for (let r = 0; r < burstRadius; r += 6) {
-          const x = clickX + Math.cos(angle) * r
-          const y = clickY + Math.sin(angle) * r
-          
-          const pixel = {
-            x: x,
-            y: y,
-            baseX: x,
-            baseY: y,
-            width: 3 + Math.random() * 3,
-            height: 3 + Math.random() * 4,
-            vx: Math.cos(angle) * (1.5 + Math.random() * 2.5),
-            vy: Math.sin(angle) * (1.5 + Math.random() * 2.5) - 1,
-            alpha: 1,
-            phase: 'appearing',
-            phaseTimer: 0,
-            floatDuration: 20 + Math.random() * 50,
-            maxAlpha: 0.7 + Math.random() * 0.3,
-            oscillationPhase: Math.random() * Math.PI * 2,
-            oscillationSpeed: 0.04 + Math.random() * 0.12,
-            type: 'flame-pixel',
-            temperature: 0.5 + Math.random() * 0.5,
-            layer: 0,
-            shapeType: Math.random()
-          }
-          waveParticles.push(pixel)
-        }
-      }
-      
-      // 添加火星 - 增加数量
-      for (let i = 0; i < 30; i++) {
-        const angle = Math.random() * Math.PI * 2
-        const speed = 2 + Math.random() * 4
-        const ember = {
-          x: clickX,
-          y: clickY,
-          width: 2 + Math.random() * 3,
-          height: 2 + Math.random() * 3,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 1,
-          alpha: 1,
-          phase: 'appearing',
-          phaseTimer: 0,
-          floatDuration: 30 + Math.random() * 60,
-          maxAlpha: 0.7 + Math.random() * 0.3,
-          trail: [],
-          trailLength: 3 + Math.floor(Math.random() * 6),
-          type: 'ember',
-          temperature: 0.3 + Math.random() * 0.5
-        }
-        waveParticles.push(ember)
-      }
+      // 点击不再产生火焰粒子
     }
 
     // 自动播放轮播图 
@@ -1520,7 +1378,6 @@ export default {
       if (waveAnimationId) {
         cancelAnimationFrame(waveAnimationId)
       }
-      mouseTrailParticles = [] // 清理鼠标尾迹粒子
 
       // 清理星空背景的鼠标事件监听器
       window.removeEventListener('mousemove', handleStarMouseMove)

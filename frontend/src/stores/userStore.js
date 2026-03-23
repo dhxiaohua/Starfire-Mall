@@ -3,9 +3,11 @@
  */
 
 import { ref } from 'vue'
+import { getUserInfo } from '../api/index'
 
 export const userStore = ref({
   isLoggedIn: false,
+  id: null,
   username: '',
   nickname: '',
   avatar: '',
@@ -16,7 +18,7 @@ export const userStore = ref({
 })
 
 // 初始化用户状态 - 使用sessionStorage支持多标签页同时登录
-export const initUserStore = () => {
+export const initUserStore = async () => {
   const storedUser = sessionStorage.getItem('currentUser')
   if (storedUser) {
     try {
@@ -29,6 +31,30 @@ export const initUserStore = () => {
       userStore.value.adminStatus = user.adminStatus || 'none'
       userStore.value.canApply = user.canApply !== undefined ? user.canApply : false
       userStore.value.isAdminMode = user.isAdminMode || false
+      
+      // 尝试获取用户ID
+      if (user.id) {
+        userStore.value.id = user.id
+      } else if (user.user && user.user.id) {
+        // 兼容旧数据格式
+        userStore.value.id = user.user.id
+      } else {
+        // 如果没有id，尝试从后端获取完整的用户信息
+        if (user.username) {
+          try {
+            const userInfo = await getUserInfo(user.username)
+            if (userInfo.success && userInfo.data && userInfo.data.id) {
+              userStore.value.id = userInfo.data.id
+              // 更新sessionStorage中的数据
+              user.id = userInfo.data.id
+              sessionStorage.setItem('currentUser', JSON.stringify({ ...user, id: userInfo.data.id }))
+            }
+          } catch (e) {
+            console.error('获取用户信息失败:', e)
+          }
+        }
+      }
+      
       // 保存token
       if (user.token) {
         userStore.value.token = user.token
@@ -50,8 +76,20 @@ export const setUserLogin = (user) => {
   userStore.value.adminStatus = user.adminStatus || 'none'
   userStore.value.canApply = user.canApply !== undefined ? user.canApply : false
   userStore.value.isAdminMode = user.isAdminMode || false
-  // 保存完整用户数据（包括token）
-  const userData = { ...userStore.value, token: user.token }
+  // 保存用户ID
+  if (user.id) {
+    userStore.value.id = user.id
+  }
+  // 保存token
+  if (user.token) {
+    userStore.value.token = user.token
+  }
+  // 保存完整用户数据到sessionStorage
+  const userData = { 
+    ...userStore.value, 
+    token: user.token,
+    id: user.id  // 确保保存id
+  }
   sessionStorage.setItem('currentUser', JSON.stringify(userData))
 }
 

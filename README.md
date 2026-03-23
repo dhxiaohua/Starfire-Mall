@@ -197,7 +197,7 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/starfire_mall?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
+    username: your_username  # 改为你的数据库用户名
     password: your_password  # 改为你的数据库密码
   redis:
     host: localhost
