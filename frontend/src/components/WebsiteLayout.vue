@@ -56,6 +56,7 @@
           
           <router-link to="/about" class="nav-item" :class="{ active: currentPage === 'about' }">关于我们</router-link>
           <router-link to="/contact" class="nav-item" :class="{ active: currentPage === 'contact' }">联系我们</router-link>
+          <router-link to="/ai-service" class="nav-item" :class="{ active: currentPage === 'ai-service' }">智能客服</router-link>
         </nav>
 
         <!-- 右侧：搜索框框 + 用户区域 -->

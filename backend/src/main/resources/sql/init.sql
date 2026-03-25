@@ -191,6 +191,22 @@ CREATE TABLE IF NOT EXISTS customer_messages (
     INDEX idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- AI 聊天记录表
+CREATE TABLE IF NOT EXISTS ai_chat_messages (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    username VARCHAR(50) NOT NULL COMMENT '用户名',
+    session_id VARCHAR(100) NOT NULL COMMENT '会话ID',
+    message TEXT NOT NULL COMMENT '消息内容',
+    is_user TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否为用户消息（1-用户，0-AI）',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除标记（0-未删除，1-已删除）',
+    PRIMARY KEY (id),
+    KEY idx_username (username),
+    KEY idx_session_id (session_id),
+    KEY idx_created_at (created_at),
+    KEY idx_deleted (deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI聊天记录表';
+
 -- 联系留言表
 CREATE TABLE IF NOT EXISTS contact_messages (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',

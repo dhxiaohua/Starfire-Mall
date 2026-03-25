@@ -30,6 +30,7 @@
 - **JWT 0.12.3** - 身份认证
 - **WebSocket** - 实时通信
 - **Redis** - 缓存服务
+- **AnythingLLM** - AI 智能客服集成（可选）
 
 ### 数据库 & 缓存
 - **MySQL 8.0** - 关系型数据库
@@ -69,6 +70,14 @@
 - 实时聊天（WebSocket）
 - 消息提醒
 - 管理员客服回复功能
+
+### AI 智能客服系统
+- 集成 AnythingLLM，支持基于知识库的智能问答
+- 支持多种聊天模式（query 模式、chat 模式）
+- 清除上下文功能
+- 用户头像显示
+- 会话记录自动保存
+- 管理员可查看所有用户的 AI 对话记录
 
 ### 管理员系统
 - 管理后台
@@ -119,7 +128,9 @@ Starfire-Mall/
 │   │   │   ├── Settings.vue   # 个人设置
 │   │   │   ├── Products.vue   # 产品列表
 │   │   │   ├── About.vue      # 关于我们
-│   │   │   └── Contact.vue    # 联系我们
+│   │   │   ├── Contact.vue    # 联系我们
+│   │   │   ├── AICustomerService.vue  # AI智能客服页面
+│   │   │   └── UserOrders.vue # 我的订单
 │   │   ├── App.vue            # 根组件
 │   │   ├── config.js          # 前端配置文件
 │   │   └── main.js            # 入口文件
@@ -140,6 +151,8 @@ Starfire-Mall/
 │   │   ├── StarfireMallApplication.java    # 主启动类
 │   │   ├── config/            # 配置类（数据库、安全、Redis、WebSocket等）
 │   │   ├── controller/        # 控制器（REST API）
+│   │   │   ├── AIController.java          # AI客服控制器
+│   │   │   ├── AIChatController.java      # AI聊天记录控制器
 │   │   │   ├── AdminController.java
 │   │   │   ├── AuthController.java
 │   │   │   ├── CartController.java
@@ -154,10 +167,13 @@ Starfire-Mall/
 │   │   ├── mapper/            # MyBatis Mapper
 │   │   ├── security/          # Spring Security 安全配置
 │   │   └── service/           # 服务层
+│   │       ├── AIService.java         # AI客服服务
+│   │       ├── AIChatService.java     # AI聊天记录服务
 │   │       └── impl/          # 服务实现类
 │   ├── src/main/resources/
 │   │   ├── application.yml    # 应用配置
 │   │   └── sql/               # SQL 脚本
+│   │       └── init.sql       # 数据库初始化脚本
 │   └── pom.xml                # Maven 配置
 │
 └── README.md                  # 项目说明文档
@@ -172,6 +188,7 @@ Starfire-Mall/
 - MySQL 8.0+
 - Maven 3.8+
 - Redis 5.0+（必需，用于缓存）
+- AnythingLLM 1.0+（AI客服功能，可选）
 
 ### 1. 克隆项目
 
@@ -213,11 +230,16 @@ file:
   upload:
     path: Starfire-Mall/frontend/public/images/avatars  # 你的文件上传路径（相对路径）
 
-
-    # JWT配置
+# JWT配置
 jwt:
   secret:  # JWT 密钥（必须填写，建议使用复杂的随机字符串）
   expiration: 86400000  # 24小时
+
+# AnythingLLM 配置（AI客服功能，可选）
+anythingllm:
+  api-url: http://127.0.0.1:3001  # AnythingLLM API 地址
+  api-key: your_api_key_here        # API 密钥（从 AnythingLLM 设置中获取）
+  workspace: your_workspace_uuid   # 工作区 UUID（从 AnythingLLM 工作区设置中获取）
 ```
 
 
@@ -288,7 +310,9 @@ npm run build
 | `/products` | 产品列表 | 公开 |
 | `/about` | 关于我们 | 公开 |
 | `/contact` | 联系我们 | 公开 |
+| `/ai-service` | AI智能客服 | 公开 |
 | `/settings` | 个人设置 | 需登录 |
+| `/orders` | 我的订单 | 需登录 |
 | `/admin` | 管理后台 | 需管理员权限 |
 
 **注意：** 登录和注册功能集成在首页和设置页面中，没有独立的登录/注册页面路由。
@@ -368,6 +392,22 @@ npm run build
 | POST | `/api/customer/mark-read` | 标记消息为已读 |
 | POST | `/api/customer/reply` | 发送客服回复（管理员） |
 
+### AI 客服 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/ai/chat` | AI 聊天接口 |
+| GET | `/api/ai/test` | 测试 AI 服务连接 |
+| POST | `/api/ai/clear-session` | 清除 AI 会话上下文 |
+
+### AI 聊天记录管理 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/ai/chat/sessions` | 获取所有 AI 会话列表（管理员） |
+| GET | `/api/ai/chat/messages/{username}` | 获取用户 AI 聊天记录（管理员） |
+| GET | `/api/ai/chat/session/{sessionId}/messages` | 获取指定会话的聊天记录（管理员） |
+
 ### 商品评论 API
 
 | 方法 | 路径 | 说明 |
@@ -390,10 +430,12 @@ npm run build
 - `orders` - 订单表
 - `order_items` - 订单项表
 - `cart` - 购物车表
-- `address` - 地址表
+- `addresses` - 地址表
 - `categories` - 分类表
 - `customer_messages` - 客服消息表
 - `product_reviews` - 商品评论表
+- `contact_messages` - 留言表
+- `ai_chat_messages` - AI 聊天记录表
 
 详细表结构请参考 `backend/src/main/resources/sql/` 目录下的 SQL 脚本。
 
@@ -407,6 +449,9 @@ npm run build
 | `REDIS_HOST` | Redis 主机 | localhost |
 | `REDIS_PORT` | Redis 端口 | 6379 |
 | `REDIS_PASSWORD` | Redis 密码 | （无） |
+| `ANYTHINGLLM_API_URL` | AnythingLLM API 地址 | http://127.0.0.1:3001 |
+| `ANYTHINGLLM_API_KEY` | AnythingLLM API 密钥 | （无） |
+| `ANYTHINGLLM_WORKSPACE` | AnythingLLM 工作区 UUID | （无） |
 
 ## 故障排查
 
@@ -446,6 +491,23 @@ npm run build
 2. **路径配置：** application.yml 中的 `file.upload.path` 需要根据实际情况修改
 3. **文件大小限制：** 默认限制为 10MB，可在 `spring.servlet.multipart` 中调整
 4. **权限问题：** 确保应用有权限写入上传目录
+
+### AI 客服相关问题
+
+1. **AI 客服无法回答问题：**
+   - 检查 AnythingLLM 服务是否正常运行
+   - 确认 `application.yml` 中的 `anythingllm` 配置是否正确
+   - 检查 API 密钥和工作区 ID 是否有效
+   - 查看后端日志确认 API 调用是否成功
+
+2. **AI 聊天记录查看失败：**
+   - 检查数据库中是否存在 `ai_chat_messages` 表
+   - 确认后端 DTO 类是否手动添加了 getter/setter 方法
+   - 重新编译并重启后端服务
+
+3. **导航栏按钮激活状态不显示：**
+   - 确保子组件传递了正确的 `currentPage` 属性
+   - 例如：`<WebsiteLayout currentPage="ai-service" />`
 
 ## 开发指南
 

@@ -711,4 +711,128 @@ export const deleteMessage = async (id) => {
     console.error('删除留言失败:', error);
     return { success: false, message: '服务器错误' };
   }
+}
+
+// ===== AI 客服 API =====
+
+// AI 聊天接口
+export const aiChat = async (message, sessionId = null, username = null) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message,
+        sessionId,
+        username
+      }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('AI 聊天失败:', error);
+    return { success: false, message: '服务器错误', data: null };
+  }
+};
+
+// AI 聊天接口（AICustomerService 使用）
+export const chatAI = async (request) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('AI 聊天失败:', error);
+    return { success: false, message: '服务器错误', reply: null };
+  }
+};
+
+// 清除 AI 会话上下文
+export const clearSession = async (request) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/clear-session`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('清除会话失败:', error);
+    return { success: false, message: '服务器错误', data: null };
+  }
+};
+
+// 测试 AI 服务连接
+export const testAIConnection = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/test`);
+    return await response.json();
+  } catch (error) {
+    console.error('测试 AI 连接失败:', error);
+    return { success: false, message: '服务器错误', data: false };
+  }
+};
+
+// 清除 AI 会话上下文（旧函数名，保留兼容性）
+export const clearAISession = async (username) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/clear-session`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('清除会话失败:', error);
+    return { success: false, message: '服务器错误', data: null };
+  }
+};
+
+// 获取用户聊天记录（管理员）
+export const getAIChatMessages = async (username) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/chat/messages/${username}`, {
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('获取聊天记录失败:', error);
+    return { success: false, message: '服务器错误', data: [] };
+  }
+};
+
+// 获取所有AI会话列表（管理员）
+export const getAllAISessions = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/chat/sessions`, {
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('获取AI会话列表失败:', error);
+    return { success: false, message: '服务器错误', data: [] };
+  }
+};
+
+// 获取指定会话的聊天记录（管理员）
+export const getAISessionMessages = async (sessionId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/chat/session/${sessionId}/messages`, {
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('获取会话聊天记录失败:', error);
+    return { success: false, message: '服务器错误', data: [] };
+  }
 };

@@ -17,8 +17,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/starfire_mall?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: your_username
-    password: your_password
+    username: root
+    password: your_database_password_here  # 请修改为你的数据库密码
     hikari:
       auto-commit: true
       connection-timeout: 30000
@@ -36,7 +36,7 @@ spring:
   redis:
     host: localhost
     port: 6379
-    password:
+    password:  # Redis 密码（如果有）
     database: 0
     timeout: 10000
     lettuce:
@@ -54,7 +54,7 @@ spring:
 # 文件上传配置
 file:
   upload:
-    path: Starfire-Mall/frontend/public/images/avatars
+    path: Starfire-Mall/frontend/public/images/avatars  # 请修改为你的实际路径
 
 mybatis-plus:
   configuration:
@@ -70,7 +70,7 @@ mybatis-plus:
 
 # JWT配置
 jwt:
-  secret:
+  secret: your_jwt_secret_key_must_be_at_least_256_bits_long  # 请修改为你的JWT密钥（至少256位）
   expiration: 86400000  # 24小时
 
 # 验证码配置
@@ -80,4 +80,13 @@ captcha:
 # 管理后台账号
 admin:
   username: admin
-  password: admin123
+  password: admin123  # 请修改为你的管理员密码
+
+# AnythingLLM 配置（AI客服功能，可选）
+anythingllm:
+  # AnythingLLM API 地址（必须与 AnythingLLM 服务运行地址一致）
+  api-url: http://127.0.0.1:3001
+  # AnythingLLM API Key（从 AnythingLLM 设置中获取）
+  api-key: your_anythingllm_api_key_here  # 请修改为你的API密钥
+  # 工作区 ID（UUID 格式，从 AnythingLLM 工作区设置中获取）
+  workspace: your_workspace_uuid_here  # 请修改为你的工作区ID

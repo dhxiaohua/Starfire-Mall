@@ -7,6 +7,7 @@ import About from '../views/About.vue'
 import Contact from '../views/Contact.vue'
 import Admin from '../views/Admin.vue'
 import UserOrders from '../views/UserOrders.vue'
+import AICustomerService from '../views/AICustomerService.vue'
 import { userStore } from '../stores/userStore'
 
 const routes = [
@@ -58,6 +59,12 @@ const routes = [
     name: 'UserOrders',
     component: UserOrders,
     meta: { title: '我的订单', requiresAuth: true }
+  },
+  {
+    path: '/ai-service',
+    name: 'AICustomerService',
+    component: AICustomerService,
+    meta: { title: '智能客服' }
   }
 ]
 
@@ -71,7 +78,7 @@ router.beforeEach((to, from, next) => {
   // 检查是否需要管理员权限
   if (to.meta.requiresAdmin) {
     if (!userStore.value.isLoggedIn) {
-      next({ name: 'Login', query: { redirect: to.fullPath } })
+      next({ name: 'Home', query: { redirect: to.fullPath } })
       return
     }
     if (!userStore.value.isAdmin) {
@@ -79,15 +86,15 @@ router.beforeEach((to, from, next) => {
       return
     }
   }
-  
+
   // 检查是否需要登录（个人设置页）
   if (to.meta.requiresAuth) {
     if (!userStore.value.isLoggedIn) {
-      next({ name: 'Login', query: { redirect: to.fullPath } })
+      next({ name: 'Home', query: { redirect: to.fullPath } })
       return
     }
   }
-  
+
   // 检查是否是访客（如已登录不能访问登录页）
   if (to.meta.guest) {
     if (userStore.value.isLoggedIn) {
@@ -95,7 +102,7 @@ router.beforeEach((to, from, next) => {
       return
     }
   }
-  
+
   next()
 })
 

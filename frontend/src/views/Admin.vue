@@ -120,6 +120,12 @@
         📧 留言管理
         <span class="badge" v-if="messageStats.pendingMessages > 0">{{ messageStats.pendingMessages }}</span>
       </button>
+      <button
+        :class="['tab-btn', { active: activeTab === 'ai-chat' }]"
+        @click="activeTab = 'ai-chat'"
+      >
+        🤖 AI聊天记录
+      </button>
     </div>
 
     <!-- 商品管理 -->
@@ -739,6 +745,45 @@
       </div>
     </div>
 
+    <!-- AI聊天记录 -->
+    <div class="content-card" v-if="activeTab === 'ai-chat'">
+      <div class="card-header">
+        <h3>AI客服聊天记录</h3>
+        <div class="header-actions">
+          <button class="refresh-btn" @click="loadAISessions">🔄 刷新</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>用户名</th>
+              <th>会话ID</th>
+              <th>消息数量</th>
+              <th>最后一条消息</th>
+              <th>最后活跃时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="session in aiSessions" :key="session.session_id">
+              <td>{{ session.username }}</td>
+              <td>{{ session.session_id }}</td>
+              <td>{{ session.message_count }}</td>
+              <td class="last-message">{{ truncateMessage(session.last_message) }}</td>
+              <td>{{ formatDateTime(session.last_message_time) }}</td>
+              <td>
+                <button class="action-btn view" @click="viewChatDetail(session)" title="查看详情">👁️</button>
+              </td>
+            </tr>
+            <tr v-if="aiSessions.length === 0">
+              <td colspan="6" class="empty-row">暂无AI聊天记录</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- 商品添加/编辑弹窗 -->
     <div class="modal-overlay" v-if="showProductModal" @click.self="closeProductModal">
       <div class="modal-content product-modal">
@@ -927,6 +972,52 @@
       </div>
     </div>
 
+    <!-- AI聊天记录详情弹窗 -->
+    <div class="modal-overlay" v-if="showChatDetailModal" @click.self="showChatDetailModal = false">
+      <div class="modal-content chat-detail-modal">
+        <div class="modal-header">
+          <h3>AI聊天记录详情 - {{ currentChatSession?.username }}</h3>
+          <button class="modal-close" @click="showChatDetailModal = false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="chat-info">
+            <div class="chat-info-row">
+              <label>用户名:</label>
+              <span>{{ currentChatSession?.username }}</span>
+            </div>
+            <div class="chat-info-row">
+              <label>会话ID:</label>
+              <span>{{ currentChatSession?.session_id }}</span>
+            </div>
+            <div class="chat-info-row">
+              <label>消息数量:</label>
+              <span>{{ currentChatMessages?.length || 0 }}</span>
+            </div>
+          </div>
+          <div class="chat-messages">
+            <div v-if="currentChatMessages.length === 0" class="empty-messages">
+              <span class="empty-icon">💬</span>
+              <p>暂无聊天记录</p>
+            </div>
+            <div
+              v-for="msg in currentChatMessages"
+              :key="msg.id"
+              class="chat-message"
+              :class="{ 'is-user': msg.isUser }"
+            >
+              <div class="message-avatar">
+                <span>{{ msg.isUser ? '👤' : '🤖' }}</span>
+              </div>
+              <div class="message-content">
+                <div class="message-text">{{ msg.message }}</div>
+                <div class="message-time">{{ formatDateTime(msg.createdAt) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 订单详情弹窗 -->
     <div class="modal-overlay" v-if="showOrderDetailModal" @click.self="showOrderDetailModal = false">
       <div class="modal-content order-detail-modal">
@@ -1032,9 +1123,9 @@
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { userStore, toggleAdminMode } from '../stores/userStore'
-import { 
-  getAdminUsers, 
-  getPendingRequests, 
+import {
+  getAdminUsers,
+  getPendingRequests,
   approveRequest,
   revokeAdmin as revokeAdminApi,
   getAdminStats,
@@ -1056,7 +1147,9 @@ import {
   getContactMessages,
   updateMessageStatus,
   replyMessage as replyMessageApi,
-  deleteMessage as deleteMessageApi
+  deleteMessage as deleteMessageApi,
+  getAllAISessions,
+  getAISessionMessages
 } from '../api'
 import { useWebSocket } from '../composables/useWebSocket'
 
@@ -1178,7 +1271,13 @@ export default {
     const selectedUserAvatar = ref('')  // 当前选中用户的头像
     const unreadMessages = computed(() => conversations.value.reduce((sum, c) => sum + c.unreadCount, 0))
     const lowStockCount = computed(() => lowStockProducts.value.length)
-    
+
+    // AI聊天记录相关
+    const aiSessions = ref([])
+    const showChatDetailModal = ref(false)
+    const currentChatSession = ref(null)
+    const currentChatMessages = ref([])
+
     // 加载商品列表
     const loadProducts = async () => {
       console.log('开始加载商品列表，分类:', productFilter.category, '关键词:', productFilter.keyword)
@@ -1348,6 +1447,51 @@ export default {
       } else {
         alert('回复失败：' + (result.message || '未知错误'))
       }
+    }
+
+    // 加载AI会话列表
+    const loadAISessions = async () => {
+      try {
+        const result = await getAllAISessions()
+        console.log('获取AI会话列表结果:', result)
+        if (result.success) {
+          aiSessions.value = result.data || []
+          console.log('AI会话数量:', aiSessions.value.length)
+        } else {
+          console.error('获取AI会话列表失败:', result.message)
+          alert('获取AI会话列表失败：' + (result.message || '未知错误'))
+        }
+      } catch (error) {
+        console.error('加载AI会话列表失败:', error)
+        alert('加载AI会话列表失败')
+      }
+    }
+
+    // 查看聊天详情
+    const viewChatDetail = async (session) => {
+      console.log('查看聊天详情:', session)
+      currentChatSession.value = session
+      try {
+        const result = await getAISessionMessages(session.session_id)
+        console.log('获取聊天消息结果:', result)
+        if (result.success) {
+          currentChatMessages.value = result.data || []
+          console.log('聊天消息数量:', currentChatMessages.value.length)
+        } else {
+          console.error('获取聊天消息失败:', result.message)
+          alert('获取聊天消息失败：' + (result.message || '未知错误'))
+        }
+      } catch (error) {
+        console.error('加载聊天详情失败:', error)
+        alert('加载聊天详情失败')
+      }
+      showChatDetailModal.value = true
+    }
+
+    // 截断消息文本
+    const truncateMessage = (message) => {
+      if (!message) return '-'
+      return message.length > 50 ? message.substring(0, 50) + '...' : message
     }
 
     const deleteMessage = async (msg) => {
@@ -1903,7 +2047,8 @@ export default {
       loadOrders()
       loadOrderStats()
       loadContactMessages()
-      
+      loadAISessions()
+
       // 监听WebSocket通知
       window.addEventListener('websocket-notification', handleWebSocketNotification)
       
@@ -2027,7 +2172,16 @@ export default {
       viewMessageDetail,
       showReplyModal,
       submitReply,
-      deleteMessage
+      deleteMessage,
+
+      // AI聊天记录
+      aiSessions,
+      showChatDetailModal,
+      currentChatSession,
+      currentChatMessages,
+      loadAISessions,
+      viewChatDetail,
+      truncateMessage
     }
   }
 }
@@ -3575,5 +3729,118 @@ export default {
   border-radius: 8px;
   color: #c9d1d9;
   line-height: 1.6;
+}
+
+/* AI聊天记录相关样式 */
+.chat-detail-modal {
+  max-width: 800px;
+}
+
+.chat-info {
+  background: #161b22;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #30363d;
+}
+
+.chat-info-row {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.chat-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.chat-info-row label {
+  width: 100px;
+  font-weight: 600;
+  color: #8b949e;
+}
+
+.chat-info-row span {
+  flex: 1;
+  color: #c9d1d9;
+}
+
+.chat-messages {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 15px;
+  background: #161b22;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+}
+
+.chat-message {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.chat-message.is-user {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #58a6ff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.chat-message.is-user .message-avatar {
+  background: #238636;
+}
+
+.message-content {
+  max-width: 70%;
+}
+
+.message-text {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  line-height: 1.5;
+}
+
+.chat-message.is-user .message-text {
+  background: #238636;
+  color: white;
+  border: none;
+}
+
+.message-time {
+  font-size: 11px;
+  color: #8b949e;
+  margin-top: 5px;
+}
+
+.empty-messages {
+  text-align: center;
+  padding: 40px 20px;
+  color: #8b949e;
+}
+
+.empty-messages .empty-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.last-message {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
